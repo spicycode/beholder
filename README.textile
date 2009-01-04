@@ -1,0 +1,13 @@
+h1. Beholder
+
+An ancient beholder that watches your treasure, and deals with thiefs.
+
+h2. What does it do?
+
+Think autotest, but powered by fseventd.
+
+h2. Requirements
+
+# OSX 10.5 or higher
+# RubyCocoa
+# fsevents gem
