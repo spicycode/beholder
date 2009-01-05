@@ -40,7 +40,6 @@ class Beholder
   end
   
   def identify_stolen_treasure(treasure)
-    say "Encountered file: #{treasure}"
     case treasure
     when /#{working_directory}\/app\/(.*)\.rb/
       "examples/#{$1}_example.rb"
