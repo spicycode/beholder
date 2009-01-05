@@ -14,6 +14,5 @@ end
 Micronaut.configure do |c|
   c.formatter = :documentation
   c.mock_with :rr
-  c.color_enabled = not_in_editor?
-  
+  c.color_enabled = not_in_editor?  
 end
