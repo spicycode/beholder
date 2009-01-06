@@ -57,9 +57,10 @@ class Beholder
   end
 
   def reclaim_stolen_treasure_at(coordinates)
-    return if coordinates.nil? || coordinates.empty?
+    real_coordinates = coordinates.map { |f| Dir.glob(f) }
+    return if coordinates.nil? || coordinates.empty? || real_coordinates.empty?
     puts "\nRunning #{coordinates.join(', ')}" 
-    system "ruby #{coordinates.map { |f| Dir.glob(f) }.join(' ')}"
+    system "ruby #{real_coordinates.join(' ')}"
   end
 
   def notice_thief_taking(treasure)
