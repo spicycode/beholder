@@ -15,6 +15,7 @@ class Beholder
   end
   
   def self.cast_thy_gaze
+    # return @beholder if @beholder
     @beholder = new
     @beholder.prepare_for_interlopers    
     @beholder.open_your_eye
