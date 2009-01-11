@@ -39,19 +39,16 @@
 (require 'shell)
 
 (defcustom beholder-command "beholder"
-  "Command name to use to execute beholder."
   :group 'beholder
   :type '(string))
 
 (defun beholder ()
-  "Fire up an instance of beholder in its own buffer with shell bindings and compile-mode highlighting and linking."
   (interactive)
   (let ((buffer (shell "*beholder*")))
     (define-key shell-mode-map "\C-c\C-a" 'beholder-switch)
     (comint-send-string buffer (concat beholder-command "\n"))))
 
 (defun beholder-switch ()
-  "Switch back and forth between beholder and the previous buffer"
   (interactive)
   (if (equal "*beholder*" (buffer-name))
       (switch-to-buffer (other-buffer))
