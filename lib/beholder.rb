@@ -7,7 +7,7 @@ class Beholder
   attr_reader :paths_to_watch, :sent_an_int, :mappings, :working_directory, :be_verbose, :the_eye
   
   def initialize
-    @paths_to_watch = ['app', 'config', 'lib', 'examples']
+    @paths_to_watch = ['app', 'config', 'lib', 'examples', 'test', 'spec']
     @sent_an_int = false
     @mappings = {}
     @working_directory = Dir.pwd
@@ -15,10 +15,9 @@ class Beholder
   end
   
   def self.cast_thy_gaze
-    # return @beholder if @beholder
-    @beholder = new
-    @beholder.prepare_for_interlopers    
-    @beholder.open_your_eye
+    beholder = new
+    beholder.prepare_for_interlopers    
+    beholder.open_your_eye
   end
     
   def open_your_eye
@@ -52,15 +51,15 @@ class Beholder
          /#{working_directory}\/config/
       "examples/**/*_example.rb"
     else
-      say "Unknown file: #{treasure}"
+      puts "Unknown file: #{treasure}"
       ''
     end
   end
 
   def reclaim_stolen_treasure_at(coordinates)
     real_coordinates = coordinates.map { |f| Dir.glob(f) }
-    return if coordinates.nil? || coordinates.empty? || real_coordinates.empty?
-    puts "\nRunning #{coordinates.join(', ')}" 
+    return if real_coordinates.empty?
+    puts "\nRunning #{real_coordinates.join(', ')}" 
     system "ruby #{real_coordinates.join(' ')}"
   end
 

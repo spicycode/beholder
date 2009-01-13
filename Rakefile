@@ -5,7 +5,7 @@ require 'date'
 require 'micronaut/rake_task'
 
 GEM = "beholder"
-GEM_VERSION = "0.0.3"
+GEM_VERSION = "0.0.4"
 AUTHOR = "Chad Humphries"
 EMAIL = "chad@spicycode.com"
 HOMEPAGE = "http://github.com/spicycode/beholder"
@@ -22,8 +22,6 @@ spec = Gem::Specification.new do |s|
   s.author = AUTHOR
   s.email = EMAIL
   s.homepage = HOMEPAGE
-  
-  # Uncomment this to add a dependency
   s.add_dependency "fsevents"
   s.bindir = 'bin'
   s.default_executable = 'beholder'
