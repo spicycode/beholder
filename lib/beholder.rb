@@ -8,15 +8,16 @@ end
 
 class Beholder
 
-  attr_reader :paths_to_watch, :sent_an_int, :mappings, :working_directory, :be_verbose, :the_eye, :treasure_maps
+  attr_reader :paths_to_watch, :sent_an_int, :mappings, :working_directory, :be_verbose, :the_eye, :treasure_maps, :corpses
   
   def initialize
-    @paths_to_watch = ['app', 'config', 'lib', 'examples', 'test', 'spec']
+    @paths_to_watch = []
     @sent_an_int = false
     @mappings = {}
     @working_directory = Dir.pwd
     @be_verbose = ARGV.include?("-v") || ARGV.include?("--verbose")
     @treasure_maps = {}
+    @corpses = ["#{@working_directory}/.treasure_map.rb", "#{@working_directory}/treasure_map.rb", "#{@working_directory}/config/treasure_map.rb"]
   end
   
   def self.cast_thy_gaze
@@ -46,9 +47,10 @@ class Beholder
   def prepare_spell_for(arcane_enemy, &spell)
     @current_map << [arcane_enemy, spell]
   end
+  alias :add_mapping :prepare_spell_for
   
   def cast_feeble_mind
-    @paths_to_watch.clear
+    @treasure_maps = {}
   end
   
   def keep_a_watchful_eye_for(*paths)
@@ -58,8 +60,7 @@ class Beholder
   def read_all_the_maps
     map_for(:default_dungeon) do |wizard|
       
-      wizard.cast_feeble_mind
-      wizard.keep_a_watchful_eye_for 'poodles', 'coverage'
+      wizard.keep_a_watchful_eye_for 'app', 'config', 'lib', 'examples'
      
       wizard.prepare_spell_for /\/app\/(.*)\.rb/ do |spell_component|
         ["examples/#{spell_component[1]}.rb"]
@@ -82,6 +83,18 @@ class Beholder
       end
 
     end
+    
+    loot_corpses
+  end
+  
+  def loot_corpses
+    corpses.each do |corpse|
+      if File.exist?(corpse)
+        say "Found a treasure map on #{corpse}"
+        instance_eval(File.readlines(corpse).join("\n"))
+        return
+      end
+    end    
   end
   
   def blink
@@ -95,11 +108,16 @@ class Beholder
   
   def identify_stolen_treasure(treasure)
     treasure_maps.each do |name, treasure_locations|
+      
       treasure_locations.each do |stolen_by_enemy, spell| 
+      
         if spell_components = treasure.match(stolen_by_enemy)
+          say "Found the stolen treasure using the #{name} map "
           return spell.cast!(spell_components)
         end
+      
       end
+    
     end
     
     puts "Unknown file: #{treasure}"

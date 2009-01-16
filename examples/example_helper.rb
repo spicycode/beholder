@@ -6,7 +6,6 @@ require 'rubygems'
 require 'micronaut'
 gem :rr, '=0.7.0'
 
-
 def not_in_editor?
   ['TM_MODE', 'EMACS', 'VIM'].all? { |k| !ENV.has_key?(k) }
 end
