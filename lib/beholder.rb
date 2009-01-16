@@ -60,12 +60,8 @@ class Beholder
   def read_all_the_maps
     map_for(:default_dungeon) do |wizard|
       
-      wizard.keep_a_watchful_eye_for 'app', 'config', 'lib', 'examples'
+      wizard.keep_a_watchful_eye_for 'lib', 'examples'
      
-      wizard.prepare_spell_for /\/app\/(.*)\.rb/ do |spell_component|
-        ["examples/#{spell_component[1]}.rb"]
-      end
-      
       wizard.prepare_spell_for /\/lib\/(.*)\.rb/ do |spell_component|
         ["examples/lib/#{spell_component[1]}_example.rb"]
       end
@@ -75,10 +71,6 @@ class Beholder
       end
       
       wizard.prepare_spell_for /\/examples\/example_helper\.rb/ do |spell_component|
-        Dir["examples/**/*_example.rb"]
-      end
-    
-      wizard.prepare_spell_for /\/config/ do
         Dir["examples/**/*_example.rb"]
       end
 
@@ -140,7 +132,7 @@ class Beholder
   end
 
   def notice_thief_taking(treasure)
-    say "#{treasure} changed"
+    say "#{treasure} changed" unless treasure.empty?
     coordinates = treasure.map { |t| identify_stolen_treasure(t) }.uniq.compact
     reclaim_stolen_treasure_at coordinates
   end
