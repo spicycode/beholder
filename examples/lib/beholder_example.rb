@@ -5,14 +5,16 @@ describe Beholder do
   describe "when casting it's gaze" do
     
     it "should begat a new beholder" do
-      beholder = stub(Beholder.new) { prepare_for_interlopers; open_your_eye }
+      beholder = stub(Beholder.new) { prepare_for_interlopers; open_your_eye; spawn_dragon }
       mock(Beholder).new { beholder }
+      
       Beholder.cast_thy_gaze
     end
     
     it "should prepare the child for interlopers" do
       beholder = Beholder.new 
       stub(beholder).open_your_eye
+      stub(beholder).spawn_dragon
       mock(beholder).prepare_for_interlopers
       stub(Beholder).new { beholder }
       
@@ -22,6 +24,7 @@ describe Beholder do
     it "should open the child's eyes" do
       beholder = Beholder.new 
       mock(beholder).open_your_eye
+      stub(beholder).spawn_dragon
       stub(beholder).prepare_for_interlopers
       stub(Beholder).new { beholder }
       
@@ -31,12 +34,6 @@ describe Beholder do
   end
   
   describe "when it notices a thief taking treasure" do
-    
-    it "should howl about the theft" do
-      beholder = Beholder.new
-      mock(beholder).say "#{[]} changed"
-      beholder.notice_thief_taking []
-    end
     
     it "should identify what was stolen" do
       treasures = ['pot_o_gold'] 

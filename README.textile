@@ -59,4 +59,7 @@ map_for(:beholders_lair) do |wizard|
   #   Dir["examples/foobar/*_example.rb"]
   # end
 
+  # You could set the list of all examples to be run after pressing ctrl-c once
+  # it defaults to any files in examples, spec, and test
+  wizard.all_examples = Dir['your/path/**/*_here.rb']
 end

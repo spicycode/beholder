@@ -5,7 +5,7 @@ require 'date'
 require 'micronaut/rake_task'
 
 GEM = "beholder"
-GEM_VERSION = "0.5.3"
+GEM_VERSION = "0.5.4"
 AUTHOR = "Chad Humphries"
 EMAIL = "chad@spicycode.com"
 HOMEPAGE = "http://github.com/spicycode/beholder"
