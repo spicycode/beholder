@@ -57,7 +57,7 @@ class Beholder
   def start
     say("Watching the following locations:\n  #{paths_to_watch.join(", ")}")
     @watcher = FSEvents::Stream.watch(paths_to_watch) do |treasure_chest|
-      notice_thief_taking(treasure_chest.modified_files)
+      something_changed(treasure_chest.modified_files)
       puts "\n\nWaiting to hear from the disk since #{Time.now}"
     end
     @watcher.run
@@ -156,7 +156,7 @@ class Beholder
     blink
   end
 
-  def notice_thief_taking(treasure)
+  def something_changed(treasure)
     say "#{treasure} changed" unless treasure.empty?
     coordinates = treasure.map { |t| identify_stolen_treasure(t) }.uniq.compact
     run_tests coordinates

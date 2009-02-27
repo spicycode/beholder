@@ -31,21 +31,21 @@ describe Beholder do
     
   end
   
-  describe "when it notices a thief taking treasure" do
+  describe "when it notices file(s) changed" do
     
-    it "should identify what was stolen" do
+    it "should identify what was changed" do
       treasures = ['pot_o_gold'] 
       beholder = Beholder.new
       mock(beholder).identify_stolen_treasure('pot_o_gold') { nil }
-      beholder.notice_thief_taking treasures
+      beholder.something_changed treasures
     end
     
-    it "should reclaim the stolen treasures" do
+    it "should run tests for the file that changed" do
       treasures = ['pot_o_gold'] 
       beholder = Beholder.new
       stub(beholder).identify_stolen_treasure('pot_o_gold') { 'x marks the spot' }
       mock(beholder).run_tests(['x marks the spot'])
-      beholder.notice_thief_taking treasures
+      beholder.something_changed treasures
     end
     
   end
