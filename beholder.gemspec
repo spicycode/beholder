@@ -2,12 +2,12 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beholder}
-  s.version = "0.5.4"
+  s.version = "0.5.5"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Chad Humphries"]
   s.autorequire = %q{beholder}
-  s.date = %q{2009-01-18}
+  s.date = %q{2009-02-27}
   s.default_executable = %q{beholder}
   s.description = %q{An ancient beholder that watches your treasure, and deals with thiefs}
   s.email = %q{chad@spicycode.com}
