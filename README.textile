@@ -52,7 +52,7 @@ map_for(:beholders_lair) do |wizard|
   wizard.keep_a_watchful_eye_for 'coverage'
   
   # Forget all other treasure maps loaded
-  # wizard.cast_feeble_mind
+  # wizard.clear_maps
  
   # Add your own rules
   # wizard.prepare_spell_for /\/foobar/ do

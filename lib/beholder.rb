@@ -2,13 +2,9 @@ require 'rubygems'
 gem :fsevents
 require 'fsevents'
 
-class Proc
-  alias :cast! :call
-end
-
 class Beholder
 
-  attr_reader :paths_to_watch, :sent_an_int, :mappings, :working_directory, :be_verbose
+  attr_reader :paths_to_watch, :sent_an_int, :mappings, :working_directory, :verbose
   attr_reader :watcher, :treasure_maps, :possible_map_locations, :all_examples
   
   def initialize
@@ -16,7 +12,7 @@ class Beholder
     @mappings, @treasure_maps = {}, {}
     @sent_an_int = false
     @working_directory = Dir.pwd
-    @be_verbose = ARGV.include?("-v") || ARGV.include?("--verbose")
+    @verbose = ARGV.include?("-v") || ARGV.include?("--verbose")
     @possible_map_locations = ["#{@working_directory}/.treasure_map.rb", "#{@working_directory}/treasure_map.rb", "#{@working_directory}/config/treasure_map.rb"]
   end
 
@@ -64,20 +60,20 @@ class Beholder
   end    
   
   def read_default_map
-    map_for(:default_dungeon) do |wizard|
+    map_for(:default) do |m|
 
-      wizard.keep_a_watchful_eye_for 'lib', 'examples'
+      m.watch 'lib', 'examples'
 
-      wizard.prepare_spell_for %r%examples/(.*)_example\.rb% do |spell_component|
-        ["examples/#{spell_component[1]}_example.rb"]
+      m.add_mapping %r%examples/(.*)_example\.rb% do |match|
+        ["examples/#{match[1]}_example.rb"]
       end
 
-      wizard.prepare_spell_for %r%examples/example_helper\.rb% do |spell_component|
+      m.add_mapping %r%examples/example_helper\.rb% do |match|
         Dir["examples/**/*_example.rb"]
       end
 
-      wizard.prepare_spell_for %r%lib/(.*)\.rb% do |spell_component|
-        ["examples/lib/#{spell_component[1]}_example.rb"]
+      m.add_mapping %r%lib/(.*)\.rb% do |file|
+        ["examples/lib/#{match[1]}_example.rb"]
       end
 
     end
@@ -91,12 +87,11 @@ class Beholder
     @current_map = nil
   end
 
-  def prepare_spell_for(arcane_enemy, &spell)
+  def add_mapping(arcane_enemy, &spell)
     @current_map << [arcane_enemy, spell]
   end
-  alias :add_mapping :prepare_spell_for
 
-  def cast_feeble_mind
+  def clear_maps
     @treasure_maps = {}
   end
   
@@ -114,7 +109,7 @@ class Beholder
     end
   end
 
-  def keep_a_watchful_eye_for(*paths)
+  def watch(*paths)
     @paths_to_watch.concat(paths)
   end
 
@@ -132,7 +127,7 @@ class Beholder
       treasure_locations.each do |stolen_by_enemy, spell| 
         if spell_components = treasure.match(stolen_by_enemy)
           say "Found the stolen treasure using the #{name} map "
-          return spell.cast!(spell_components)
+          return spell.call(spell_components)
         end
       end
     end
@@ -163,8 +158,8 @@ class Beholder
   end
 
   private
-  def say(this_message_please)
-    puts this_message_please if be_verbose
+  def say(msg)
+    puts msg if verbose
   end
 
 end
