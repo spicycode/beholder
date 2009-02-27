@@ -2,33 +2,31 @@ require File.expand_path(File.dirname(__FILE__) + "/../example_helper")
 
 describe Beholder do
 
-  describe "when casting it's gaze" do
+  describe "when run is called" do
     
-    it "should begat a new beholder" do
-      beholder = stub(Beholder.new) { prepare_for_interlopers; open_your_eye; spawn_dragon }
+    it "should create a new beholder" do
+      beholder = stub(Beholder.new) { prepare; start }
       mock(Beholder).new { beholder }
       
-      Beholder.cast_thy_gaze
+      Beholder.run
     end
     
-    it "should prepare the child for interlopers" do
+    it "should prepare" do
       beholder = Beholder.new 
-      stub(beholder).open_your_eye
-      stub(beholder).spawn_dragon
-      mock(beholder).prepare_for_interlopers
+      stub(beholder).start
+      mock(beholder).prepare
       stub(Beholder).new { beholder }
       
-      Beholder.cast_thy_gaze
+      Beholder.run
     end
     
-    it "should open the child's eyes" do
+    it "should start" do
       beholder = Beholder.new 
-      mock(beholder).open_your_eye
-      stub(beholder).spawn_dragon
-      stub(beholder).prepare_for_interlopers
+      mock(beholder).start
+      stub(beholder).prepare
       stub(Beholder).new { beholder }
       
-      Beholder.cast_thy_gaze
+      Beholder.run
     end
     
   end
@@ -46,7 +44,7 @@ describe Beholder do
       treasures = ['pot_o_gold'] 
       beholder = Beholder.new
       stub(beholder).identify_stolen_treasure('pot_o_gold') { 'x marks the spot' }
-      mock(beholder).reclaim_stolen_treasure_at(['x marks the spot'])
+      mock(beholder).run_tests(['x marks the spot'])
       beholder.notice_thief_taking treasures
     end
     
@@ -65,20 +63,20 @@ describe Beholder do
     
   end
   
-  describe "when closing it's eye" do
+  describe "when shutting down" do
     
-    it "should stop watching for interlopers"  do
+    it "should stop watching for changes"  do
       beholder = Beholder.new
       stub(beholder).exit
-      stub(beholder).the_eye { mock!.shutdown }
-      beholder.close_your_eye
+      stub(beholder).watcher { mock!.shutdown }
+      beholder.shutdown
     end
     
-    it "should leave the dungeon" do
+    it "should exit" do
       beholder = Beholder.new
-      stub(beholder).the_eye { stub!.shutdown }
+      stub(beholder).watcher { stub!.shutdown }
       mock(beholder).exit
-      beholder.close_your_eye
+      beholder.shutdown
     end
     
   end

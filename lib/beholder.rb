@@ -9,7 +9,7 @@ end
 class Beholder
 
   attr_reader :paths_to_watch, :sent_an_int, :mappings, :working_directory, :be_verbose
-  attr_reader :the_eye, :treasure_maps, :possible_map_locations, :all_examples
+  attr_reader :watcher, :treasure_maps, :possible_map_locations, :all_examples
   
   def initialize
     @paths_to_watch, @all_examples = [], []
@@ -20,12 +20,12 @@ class Beholder
     @possible_map_locations = ["#{@working_directory}/.treasure_map.rb", "#{@working_directory}/treasure_map.rb", "#{@working_directory}/config/treasure_map.rb"]
   end
 
-  def self.cast_thy_gaze
+  def self.run
     beholder = new
     beholder.read_all_maps
     beholder.set_all_examples if beholder.all_examples.empty?
-    beholder.prepare_for_interlopers    
-    beholder.open_your_eye
+    beholder.prepare    
+    beholder.start
   end
 
   def read_all_maps
@@ -40,27 +40,27 @@ class Beholder
     end
   end
 
-  def prepare_for_interlopers
+  def prepare
     trap 'INT' do
       if @sent_an_int then      
         puts "   A second INT?  Ok, I get the message.  Shutting down now."
-        close_your_eye
+        shutdown
       else
         puts "   Did you just send me an INT? Ugh.  I'll quit for real if you do it again."
         @sent_an_int = true
         Kernel.sleep 1.5
-        reclaim_stolen_treasure_at all_examples
+        run_tests all_examples
       end
     end
   end    
 
-  def open_your_eye
+  def start
     say("Watching the following locations:\n  #{paths_to_watch.join(", ")}")
-    @the_eye = FSEvents::Stream.watch(paths_to_watch) do |treasure_chest|
+    @watcher = FSEvents::Stream.watch(paths_to_watch) do |treasure_chest|
       notice_thief_taking(treasure_chest.modified_files)
       puts "\n\nWaiting to hear from the disk since #{Time.now}"
     end
-    @the_eye.run
+    @watcher.run
   end    
   
   def read_default_map
@@ -122,8 +122,8 @@ class Beholder
     @sent_an_int = false
   end
 
-  def close_your_eye
-    the_eye.shutdown
+  def shutdown
+    watcher.shutdown
     exit
   end
 
@@ -141,7 +141,7 @@ class Beholder
     return []
   end
 
-  def reclaim_stolen_treasure_at(coordinates)
+  def run_tests(coordinates)
     coordinates.flatten!
 
     coordinates.reject! do |coordinate|
@@ -159,7 +159,7 @@ class Beholder
   def notice_thief_taking(treasure)
     say "#{treasure} changed" unless treasure.empty?
     coordinates = treasure.map { |t| identify_stolen_treasure(t) }.uniq.compact
-    reclaim_stolen_treasure_at coordinates
+    run_tests coordinates
   end
 
   private
