@@ -2,12 +2,12 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beholder}
-  s.version = "0.5.5"
+  s.version = "0.5.5.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = ["Chad Humphries"]
+  s.authors = [["Chad Humphries", "Rob Sanheim"]]
   s.autorequire = %q{beholder}
-  s.date = %q{2009-02-27}
+  s.date = %q{2009-03-03}
   s.default_executable = %q{beholder}
   s.description = %q{An ancient beholder that watches your treasure, and deals with thiefs}
   s.email = %q{chad@spicycode.com}
@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = ["README.textile", "LICENSE", "TODO"]
   s.files = ["LICENSE", "README.textile", "Rakefile", "TODO", "lib/beholder.rb", "examples/example_helper.rb", "examples/lib", "examples/lib/beholder_example.rb", "bin/beholder"]
   s.has_rdoc = true
-  s.homepage = %q{http://github.com/spicycode/beholder}
+  s.homepage = %q{http://github.com/rsanheim/beholder}
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.1}
   s.summary = %q{An ancient beholder that watches your treasure, and deals with thiefs}

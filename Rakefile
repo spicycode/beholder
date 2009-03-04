@@ -5,10 +5,10 @@ require 'date'
 require 'micronaut/rake_task'
 
 GEM = "beholder"
-GEM_VERSION = "0.5.5"
-AUTHOR = "Chad Humphries"
+GEM_VERSION = "0.5.5.1"
+AUTHOR = ["Chad Humphries", "Rob Sanheim"]
 EMAIL = "chad@spicycode.com"
-HOMEPAGE = "http://github.com/spicycode/beholder"
+HOMEPAGE = "http://github.com/rsanheim/beholder"
 SUMMARY = "An ancient beholder that watches your treasure, and deals with thiefs"
 
 spec = Gem::Specification.new do |s|
