@@ -59,8 +59,8 @@ class Beholder
     run_tests matches
   end
   
-  def examples_matching(name)
-    regex = %r%.*#{name}_example\.rb$%
+  def examples_matching(name, suffix = "example")
+    regex = %r%.*#{name}_#{suffix}\.rb$%
     all_examples.find_all { |ex| ex =~ regex }
   end
 
