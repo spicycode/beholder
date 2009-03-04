@@ -168,6 +168,7 @@ class Beholder
     return if coordinates.empty?
 
     puts "\nRunning #{coordinates.join(', ').inspect}" 
+    # -e \"%w[#{classes.join(' ')}].each { |f| require f }\"
     cmd = "ruby #{coordinates.join(' ')}"
     say cmd
     system cmd
