@@ -29,7 +29,7 @@ class Beholder
 
     possible_map_locations.each do |map_location|
       if File.exist?(map_location)
-        say "Found a treasure map at #{map_location}"
+        say "Found a map at #{map_location}"
         instance_eval(File.readlines(map_location).join("\n"))
         return
       end
@@ -112,6 +112,8 @@ class Beholder
   def watch(*paths)
     @paths_to_watch.concat(paths)
   end
+  
+  alias :keep_a_watchful_eye_for :watch
 
   def blink
     @sent_an_int = false

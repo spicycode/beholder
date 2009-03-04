@@ -48,6 +48,13 @@ describe Beholder do
       beholder.on_change files
     end
     
+    it "should match stuff" do
+      files = ['widgets'] 
+      beholder = Beholder.new
+      stub(beholder).find_matches('widgets') { 'widgets_example' }
+      mock(beholder).run_tests(['widgets_example'])
+      beholder.on_change files
+    end
   end
   
   describe "blink" do
@@ -79,6 +86,21 @@ describe Beholder do
       beholder.shutdown
     end
     
+  end
+  
+  describe "watch" do
+    
+    it "adds paths to watch" do
+      beholder = Beholder.new
+      beholder.watch "foo", "bar"
+      beholder.paths_to_watch.should == ["foo", "bar"]
+    end
+    
+    it "aliases keep_a_watchful_eye_for to watch" do
+      beholder = Beholder.new
+      beholder.keep_a_watchful_eye_for "foo", "bar"
+      beholder.paths_to_watch.should == ["foo", "bar"]
+    end
   end
   
 end
