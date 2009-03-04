@@ -58,6 +58,11 @@ class Beholder
     matches = treasure.map { |t| find_matches(t) }.uniq.compact
     run_tests matches
   end
+  
+  def examples_matching(name)
+    regex = %r%.*#{name}_example\.rb$%
+    all_examples.find_all { |ex| ex =~ regex }
+  end
 
   protected
 
@@ -109,13 +114,13 @@ class Beholder
         Dir["examples/**/*_example.rb"]
       end
 
-      m.add_mapping %r%lib/(.*)\.rb% do |file|
-        ["examples/lib/#{match[1]}_example.rb"]
+      m.add_mapping %r%lib/(.*)\.rb% do |match|
+        examples_matching match[1]
       end
 
     end
   end
-
+  
   def clear_maps
     @treasure_maps = {}
   end
@@ -138,12 +143,12 @@ class Beholder
     @sent_an_int = false
   end
 
-  def find_matches(treasure)
-    treasure_maps.each do |name, treasure_locations|
-      treasure_locations.each do |stolen_by_enemy, spell| 
-        if spell_components = treasure.match(stolen_by_enemy)
-          say "Found the stolen treasure using the #{name} map "
-          return spell.call(spell_components)
+  def find_matches(path)
+    treasure_maps.each do |name, map|
+      map.each do |pattern, blk|
+        if match = path.match(pattern)
+          say "Found the match for #{path} using the #{name} map "
+          return blk.call(match)
         end
       end
     end

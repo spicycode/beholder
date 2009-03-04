@@ -48,13 +48,6 @@ describe Beholder do
       beholder.on_change files
     end
     
-    it "should match stuff" do
-      files = ['widgets'] 
-      beholder = Beholder.new
-      stub(beholder).find_matches('widgets') { 'widgets_example' }
-      mock(beholder).run_tests(['widgets_example'])
-      beholder.on_change files
-    end
   end
   
   describe "blink" do
@@ -117,6 +110,15 @@ describe Beholder do
       blk = lambda { "something" }
       beholder.map_for(:example) { |m| m.prepare_spell_for(%r%example_helper\.rb%, &blk) }
       beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, blk ]]
+    end
+  end
+  
+  describe "examples_matching" do
+
+    it "finds a fuzzy match from all_examples" do
+      beholder = Beholder.new
+      stub(beholder).all_examples { ["examples/unit/foo_example.rb", "examples/slow/foo_example.rb", "src/foo_system_example.rb", "examples/some/deeper/dir/foo_example.rb"] }
+      beholder.examples_matching("foo").should == ["examples/unit/foo_example.rb", "examples/slow/foo_example.rb", "examples/some/deeper/dir/foo_example.rb"]
     end
   end
   
