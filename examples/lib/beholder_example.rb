@@ -50,6 +50,13 @@ describe Beholder do
     
   end
   
+  describe "build_cmd" do
+    it "contructs build cmd by requiring all test files" do
+      beholder = Beholder.new
+      beholder.build_cmd(["test/foo_test.rb"]).should == %[ruby -e "%w[test/foo_test].each { |f| require f }"]
+    end
+  end
+  
   describe "blink" do
     
     it "should forget about any interlopers" do

@@ -64,6 +64,15 @@ class Beholder
     all_examples.find_all { |ex| ex =~ regex }
   end
 
+  def build_cmd(paths)
+    classes = paths.collect { |p| p.gsub(".rb", "") }
+    puts "\nRunning #{paths.join(', ').inspect}" 
+    execute = %[-e "%w[#{classes}].each { |f| require f }"]
+    cmd = "ruby #{execute}"
+    say cmd
+    cmd
+  end
+
   protected
 
   def read_all_maps
@@ -157,24 +166,19 @@ class Beholder
     return []
   end
 
-  def run_tests(coordinates)
-    coordinates.flatten!
+  def run_tests(paths)
+    paths.flatten!
 
-    coordinates.reject! do |coordinate|
-      found_treasure = File.exist?(coordinate)
-      puts "#{coordinate} does not exist." unless found_treasure
+    paths.reject! do |path|
+      found_treasure = File.exist?(path)
+      puts "#{path} does not exist." unless found_treasure
     end
 
-    return if coordinates.empty?
-
-    puts "\nRunning #{coordinates.join(', ').inspect}" 
-    # -e \"%w[#{classes.join(' ')}].each { |f| require f }\"
-    cmd = "ruby #{coordinates.join(' ')}"
-    say cmd
-    system cmd
+    return if paths.empty?
+    system build_cmd(paths)
     blink
   end
-
+  
   private
   def say(msg)
     puts msg if verbose
