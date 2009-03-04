@@ -15,14 +15,51 @@ class Beholder
     @verbose = ARGV.include?("-v") || ARGV.include?("--verbose")
     @possible_map_locations = ["#{@working_directory}/.treasure_map.rb", "#{@working_directory}/treasure_map.rb", "#{@working_directory}/config/treasure_map.rb"]
   end
-
+  
+  def run
+    read_all_maps
+    set_all_examples if all_examples.empty?
+    prepare    
+    start
+  end
+  
   def self.run
     beholder = new
-    beholder.read_all_maps
-    beholder.set_all_examples if beholder.all_examples.empty?
-    beholder.prepare    
-    beholder.start
+    beholder.run
+    self
   end
+  
+  def map_for(map_name)
+    @treasure_maps[map_name] ||= []
+    @current_map = @treasure_maps[map_name]
+    yield self if block_given?
+  ensure
+    @current_map = nil
+  end
+
+  def add_mapping(pattern, &blk)
+    @current_map << [pattern, blk]
+  end
+
+  def watch(*paths)
+    @paths_to_watch.concat(paths)
+  end
+  
+  alias :keep_a_watchful_eye_for :watch
+  alias :prepare_spell_for :add_mapping
+
+  def shutdown
+    watcher.shutdown
+    exit
+  end
+
+  def on_change(treasure)
+    say "#{treasure} changed" unless treasure.empty?
+    matches = treasure.map { |t| find_matches(t) }.uniq.compact
+    run_tests matches
+  end
+
+  protected
 
   def read_all_maps
     read_default_map
@@ -79,18 +116,6 @@ class Beholder
     end
   end
 
-  def map_for(map_name)
-    @treasure_maps[map_name] ||= []
-    @current_map = @treasure_maps[map_name]
-    yield self if block_given?
-  ensure
-    @current_map = nil
-  end
-
-  def add_mapping(arcane_enemy, &spell)
-    @current_map << [arcane_enemy, spell]
-  end
-
   def clear_maps
     @treasure_maps = {}
   end
@@ -109,19 +134,8 @@ class Beholder
     end
   end
 
-  def watch(*paths)
-    @paths_to_watch.concat(paths)
-  end
-  
-  alias :keep_a_watchful_eye_for :watch
-
   def blink
     @sent_an_int = false
-  end
-
-  def shutdown
-    watcher.shutdown
-    exit
   end
 
   def find_matches(treasure)
@@ -151,12 +165,6 @@ class Beholder
     puts "\nRunning #{coordinates.join(', ').inspect}" 
     system "ruby #{coordinates.join(' ')}"
     blink
-  end
-
-  def on_change(treasure)
-    say "#{treasure} changed" unless treasure.empty?
-    matches = treasure.map { |t| find_matches(t) }.uniq.compact
-    run_tests matches
   end
 
   private

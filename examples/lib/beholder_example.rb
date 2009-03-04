@@ -64,7 +64,7 @@ describe Beholder do
       beholder.instance_variable_set("@sent_an_int", true) # Not so hot, but I'm tired
 
       beholder.sent_an_int.should be_true
-      beholder.blink
+      beholder.__send__ :blink
       beholder.sent_an_int.should be_false
     end
     
@@ -100,6 +100,23 @@ describe Beholder do
       beholder = Beholder.new
       beholder.keep_a_watchful_eye_for "foo", "bar"
       beholder.paths_to_watch.should == ["foo", "bar"]
+    end
+  end
+  
+  describe "add_mapping" do
+    
+    it "adds pattern and block to current_map" do
+      beholder = Beholder.new
+      blk = lambda { "something" }
+      beholder.map_for(:example) { |m| m.add_mapping(%r%example_helper\.rb%, &blk) }
+      beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, blk ]]
+    end
+    
+    it "aliases prepare_spell_for to add_mapping" do
+      beholder = Beholder.new
+      blk = lambda { "something" }
+      beholder.map_for(:example) { |m| m.prepare_spell_for(%r%example_helper\.rb%, &blk) }
+      beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, blk ]]
     end
   end
   
