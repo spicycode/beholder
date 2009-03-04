@@ -153,7 +153,7 @@ class Beholder
       end
     end
 
-    puts "Unknown file: #{treasure}"
+    puts "Unknown file: #{path}"
     return []
   end
 
