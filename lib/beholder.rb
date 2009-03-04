@@ -168,7 +168,9 @@ class Beholder
     return if coordinates.empty?
 
     puts "\nRunning #{coordinates.join(', ').inspect}" 
-    system "ruby #{coordinates.join(' ')}"
+    cmd = "ruby #{coordinates.join(' ')}"
+    say cmd
+    system cmd
     blink
   end
 
