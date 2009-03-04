@@ -34,23 +34,23 @@ describe Beholder do
   describe "when it notices file(s) changed" do
     
     it "should identify what was changed" do
-      treasures = ['pot_o_gold'] 
+      files = ['widgets'] 
       beholder = Beholder.new
-      mock(beholder).identify_stolen_treasure('pot_o_gold') { nil }
-      beholder.something_changed treasures
+      mock(beholder).find_matches('widgets') { nil }
+      beholder.on_change files
     end
     
     it "should run tests for the file that changed" do
-      treasures = ['pot_o_gold'] 
+      files = ['widgets'] 
       beholder = Beholder.new
-      stub(beholder).identify_stolen_treasure('pot_o_gold') { 'x marks the spot' }
-      mock(beholder).run_tests(['x marks the spot'])
-      beholder.something_changed treasures
+      stub(beholder).find_matches('widgets') { 'widgets_example' }
+      mock(beholder).run_tests(['widgets_example'])
+      beholder.on_change files
     end
     
   end
   
-  describe "when blinking it's eye" do
+  describe "blink" do
     
     it "should forget about any interlopers" do
       beholder = Beholder.new

@@ -8,10 +8,10 @@ class Beholder
   attr_reader :watcher, :treasure_maps, :possible_map_locations, :all_examples
   
   def initialize
+    @working_directory = Dir.pwd
     @paths_to_watch, @all_examples = [], []
     @mappings, @treasure_maps = {}, {}
     @sent_an_int = false
-    @working_directory = Dir.pwd
     @verbose = ARGV.include?("-v") || ARGV.include?("--verbose")
     @possible_map_locations = ["#{@working_directory}/.treasure_map.rb", "#{@working_directory}/treasure_map.rb", "#{@working_directory}/config/treasure_map.rb"]
   end
@@ -52,8 +52,8 @@ class Beholder
 
   def start
     say("Watching the following locations:\n  #{paths_to_watch.join(", ")}")
-    @watcher = FSEvents::Stream.watch(paths_to_watch) do |treasure_chest|
-      something_changed(treasure_chest.modified_files)
+    @watcher = FSEvents::Stream.watch(paths_to_watch) do |event|
+      on_change(event.modified_files)
       puts "\n\nWaiting to hear from the disk since #{Time.now}"
     end
     @watcher.run
@@ -122,7 +122,7 @@ class Beholder
     exit
   end
 
-  def identify_stolen_treasure(treasure)
+  def find_matches(treasure)
     treasure_maps.each do |name, treasure_locations|
       treasure_locations.each do |stolen_by_enemy, spell| 
         if spell_components = treasure.match(stolen_by_enemy)
@@ -151,10 +151,10 @@ class Beholder
     blink
   end
 
-  def something_changed(treasure)
+  def on_change(treasure)
     say "#{treasure} changed" unless treasure.empty?
-    coordinates = treasure.map { |t| identify_stolen_treasure(t) }.uniq.compact
-    run_tests coordinates
+    matches = treasure.map { |t| find_matches(t) }.uniq.compact
+    run_tests matches
   end
 
   private
