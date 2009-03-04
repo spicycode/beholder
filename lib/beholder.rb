@@ -53,9 +53,9 @@ class Beholder
     exit
   end
 
-  def on_change(treasure)
-    say "#{treasure} changed" unless treasure.empty?
-    matches = treasure.map { |t| find_matches(t) }.uniq.compact
+  def on_change(paths)
+    say "#{paths} changed" unless paths.nil? || paths.empty?
+    matches = paths.map { |path| find_matches(path) }.uniq.compact
     run_tests matches
   end
   
