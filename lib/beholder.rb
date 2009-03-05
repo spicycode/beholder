@@ -105,7 +105,7 @@ class Beholder
     say("Watching the following locations:\n  #{paths_to_watch.join(", ")}")
     @watcher = FSEvents::Stream.watch(paths_to_watch) do |event|
       on_change(event.modified_files)
-      puts "\n\nWaiting to hear from the disk since #{Time.now}"
+      puts "\n\nWaiting for changes since #{Time.now}"
     end
     @watcher.run
   end    
