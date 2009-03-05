@@ -65,7 +65,7 @@ class Beholder
   end
 
   def build_cmd(paths)
-    classes = paths.collect { |p| p.gsub(".rb", "") }
+    classes = paths.map { |p| p.gsub(".rb", "") }.join(" ")
     puts "\nRunning #{paths.join(', ').inspect}" 
     execute = %[-e "%w[#{classes}].each { |f| require f }"]
     cmd = "ruby #{execute}"

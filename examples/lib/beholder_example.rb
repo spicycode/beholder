@@ -51,10 +51,16 @@ describe Beholder do
   end
   
   describe "build_cmd" do
-    it "contructs build cmd by requiring all test files" do
+    it "contructs build cmd for a single file" do
       beholder = Beholder.new
       beholder.build_cmd(["test/foo_test.rb"]).should == %[ruby -e "%w[test/foo_test].each { |f| require f }"]
     end
+    
+    it "contructs build cmd for a multiple files" do
+      beholder = Beholder.new
+      beholder.build_cmd(["test/foo_test.rb", "test/functionals/foo_test.rb"]).should == %[ruby -e "%w[test/foo_test test/functionals/foo_test].each { |f| require f }"]
+    end
+    
   end
   
   describe "blink" do
