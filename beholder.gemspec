@@ -33,3 +33,4 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<fsevents>, [">= 0"])
   end
 end
+
