@@ -1,5 +1,3 @@
-GEM_VERSION = "0.5.5.1"
-
 begin
   require 'jeweler'
   Jeweler::Tasks.new do |s|
