@@ -149,6 +149,18 @@ describe Beholder do
     end
   end
   
+  describe "read_map_at" do
+    
+    it "rescues exceptions from instance_eval'ing the map, and carrys on" do
+      beholder = Beholder.new
+      stub(File).exist? { true }
+      mock(File).readlines("my_map.rb") { ["!and this is invalid Ruby;end\nand more"] }
+      stub(beholder).puts
+      lambda { beholder.read_map_at("my_map.rb") }.should_not raise_error
+    end
+    
+  end
+  
   describe "output" do
     
     it "say puts to stdout if verbose is true" do

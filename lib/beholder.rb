@@ -77,8 +77,6 @@ class Beholder
     cmd
   end
 
-  protected
-
   def read_all_maps
     read_default_map
     possible_map_locations.each { |path| read_map_at(path) }
@@ -87,8 +85,15 @@ class Beholder
   def read_map_at(path)
     return unless File.exist?(path)
     say "Found a map at #{path}"
-    instance_eval(File.readlines(path).join("\n"))
+    begin
+      instance_eval(File.readlines(path).join("\n"))
+    rescue Object => e
+      puts "Exception caught trying to load map at #{path}"
+      puts e
+    end
   end
+
+  protected
 
   def prepare
     trap 'INT' do
@@ -114,8 +119,8 @@ class Beholder
   end
   
   def startup_msg
-    puts %[Beholder has started - CTRL-C once to reset, twice to quit.]
-    puts %[Watching the following paths:\n  #{paths_to_watch.join(", ")}]
+    puts %[Beholder has loaded - CTRL-C once to reset, twice to quit.]
+    puts %[Watching the following paths: #{paths_to_watch.join(", ")}]
   end
   
   def read_default_map
