@@ -63,3 +63,5 @@ map_for(:beholders_lair) do |wizard|
   # it defaults to any files in examples, spec, and test
   wizard.all_examples = Dir['your/path/**/*_here.rb']
 end
+
+Treasure maps are automatically reloaded when you change them, so you can fire up Beholder and start iterating on the config live.
