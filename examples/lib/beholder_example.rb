@@ -98,14 +98,20 @@ describe Beholder do
     
     it "adds paths to watch" do
       beholder = Beholder.new
-      beholder.watch "foo", "bar"
-      beholder.paths_to_watch.should == ["foo", "bar"]
+      beholder.watch "bar", "foo"
+      beholder.paths_to_watch.should == ["bar", "foo"]
     end
     
     it "aliases keep_a_watchful_eye_for to watch" do
       beholder = Beholder.new
-      beholder.keep_a_watchful_eye_for "foo", "bar"
-      beholder.paths_to_watch.should == ["foo", "bar"]
+      beholder.keep_a_watchful_eye_for "bar", "foo"
+      beholder.paths_to_watch.should == ["bar", "foo"]
+    end
+    
+    it "should uniq and sort the paths" do
+      beholder = Beholder.new
+      beholder.watch "foo", "bar", "specs", "foo", "bar", "bar2"
+      beholder.paths_to_watch.should == ["bar", "bar2", "foo", "specs"]
     end
   end
   
@@ -132,6 +138,20 @@ describe Beholder do
       beholder = Beholder.new
       stub(beholder).all_examples { ["examples/unit/foo_example.rb", "examples/slow/foo_example.rb", "src/foo_system_example.rb", "examples/some/deeper/dir/foo_example.rb"] }
       beholder.examples_matching("foo").should == ["examples/unit/foo_example.rb", "examples/slow/foo_example.rb", "examples/some/deeper/dir/foo_example.rb"]
+    end
+  end
+  
+  describe "output" do
+    
+    it "say puts to stdout if verbose is true" do
+      begin 
+        ARGV.push("-v")
+        beholder = Beholder.new
+        mock(beholder).puts("yo dawg")
+        beholder.send :say, "yo dawg"
+      ensure
+        ARGV.pop
+      end
     end
   end
   

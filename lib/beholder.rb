@@ -42,7 +42,9 @@ class Beholder
   end
 
   def watch(*paths)
-    @paths_to_watch.concat(paths)
+    self.paths_to_watch.concat(paths)
+    self.paths_to_watch.uniq!
+    self.paths_to_watch.sort!
   end
   
   alias :keep_a_watchful_eye_for :watch
@@ -102,13 +104,18 @@ class Beholder
   end    
 
   def start
-    say("Watching the following locations:\n  #{paths_to_watch.join(", ")}")
+    startup_msg
     @watcher = FSEvents::Stream.watch(paths_to_watch) do |event|
       on_change(event.modified_files)
       puts "\n\nWaiting for changes since #{Time.now}"
     end
     @watcher.run
-  end    
+  end
+  
+  def startup_msg
+    puts %[Beholder has started - CTRL-C once to reset, twice to quit.]
+    puts %[Watching the following paths:\n  #{paths_to_watch.join(", ")}]
+  end
   
   def read_default_map
     map_for(:default) do |m|
@@ -180,6 +187,7 @@ class Beholder
   end
   
   private
+
   def say(msg)
     puts msg if verbose
   end
