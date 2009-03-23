@@ -57,6 +57,8 @@ class Beholder
 
   def on_change(paths)
     say "#{paths} changed" unless paths.nil? || paths.empty?
+    treasure_maps_changed = paths.select { |p| possible_map_locations.include?(p) }
+    treasure_maps_changed.each {|map_path| read_map_at(map_path) }
     matches = paths.map { |path| find_matches(path) }.uniq.compact
     run_tests matches
   end
@@ -79,14 +81,13 @@ class Beholder
 
   def read_all_maps
     read_default_map
-
-    possible_map_locations.each do |map_location|
-      if File.exist?(map_location)
-        say "Found a map at #{map_location}"
-        instance_eval(File.readlines(map_location).join("\n"))
-        return
-      end
-    end
+    possible_map_locations.each { |path| read_map_at(path) }
+  end
+  
+  def read_map_at(path)
+    return unless File.exist?(path)
+    say "Found a map at #{path}"
+    instance_eval(File.readlines(path).join("\n"))
   end
 
   def prepare

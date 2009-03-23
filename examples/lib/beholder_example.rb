@@ -48,6 +48,14 @@ describe Beholder do
       beholder.on_change files
     end
     
+    it "should re-eval the treasure map if the map was modified" do
+      treasure_map = "#{Dir.pwd}/.treasure_map.rb"
+      beholder = Beholder.new
+      stub(File).exist?(treasure_map) { true }
+      mock(beholder).read_map_at(treasure_map)
+      beholder.on_change treasure_map
+    end
+    
   end
   
   describe "build_cmd" do
@@ -148,7 +156,7 @@ describe Beholder do
         ARGV.push("-v")
         beholder = Beholder.new
         mock(beholder).puts("yo dawg")
-        beholder.send :say, "yo dawg"
+        beholder.__send__ :say, "yo dawg"
       ensure
         ARGV.pop
       end
