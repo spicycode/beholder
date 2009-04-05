@@ -71,7 +71,9 @@ class Beholder
   def build_cmd(paths)
     classes = paths.map { |p| p.gsub(".rb", "") }.join(" ")
     puts "\nRunning #{paths.join(', ').inspect}" 
+
     execute = %[-e "%w[#{classes}].each { |f| require f }"]
+# Pickup command from treasure map here, probably
     cmd = "ruby #{execute}"
     say cmd
     cmd
