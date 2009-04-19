@@ -119,7 +119,7 @@ class Beholder
         puts "   Did you just send me an INT? Ugh.  I'll quit for real if you do it again."
         @sent_an_int = true
         Kernel.sleep 1.5
-        run_tests all_examples
+        run_tests default_runner => all_examples
       end
     end
   end    
