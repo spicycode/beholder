@@ -5,30 +5,31 @@ require 'fsevents'
 class Beholder
 
   attr_reader :paths_to_watch, :sent_an_int, :mappings, :working_directory, :verbose
-  attr_reader :watcher, :treasure_maps, :possible_map_locations, :all_examples
-  
+  attr_reader :watcher, :treasure_maps, :possible_map_locations, :all_examples, :default_runner
+
   def initialize
     @working_directory = Dir.pwd
     @paths_to_watch, @all_examples = [], []
     @mappings, @treasure_maps = {}, {}
     @sent_an_int = false
     @verbose = ARGV.include?("-v") || ARGV.include?("--verbose")
+    @default_runner = 'ruby'
     @possible_map_locations = ["#{@working_directory}/.treasure_map.rb", "#{@working_directory}/treasure_map.rb", "#{@working_directory}/config/treasure_map.rb"]
   end
-  
+
   def run
     read_all_maps
     set_all_examples if all_examples.empty?
     prepare    
     start
   end
-  
+
   def self.run
     beholder = new
     beholder.run
     self
   end
-  
+
   def map_for(map_name)
     @treasure_maps[map_name] ||= []
     @current_map = @treasure_maps[map_name]
@@ -36,17 +37,22 @@ class Beholder
   ensure
     @current_map = nil
   end
+  
+  def default_options
+    { :command => "ruby" }
+  end
 
-  def add_mapping(pattern, &blk)
-    @current_map << [pattern, blk]
+  def add_mapping(pattern, options = {}, &blk)
+    options = default_options.merge(options)
+    @current_map << [pattern, options, blk]
   end
 
   def watch(*paths)
-    self.paths_to_watch.concat(paths)
-    self.paths_to_watch.uniq!
-    self.paths_to_watch.sort!
+    @paths_to_watch.concat(paths)
+    @paths_to_watch.uniq!
+    @paths_to_watch.sort!
   end
-  
+
   alias :keep_a_watchful_eye_for :watch
   alias :prepare_spell_for :add_mapping
 
@@ -57,24 +63,31 @@ class Beholder
 
   def on_change(paths)
     say "#{paths} changed" unless paths.nil? || paths.empty?
+
     treasure_maps_changed = paths.select { |p| possible_map_locations.include?(p) }
     treasure_maps_changed.each {|map_path| read_map_at(map_path) }
-    matches = paths.map { |path| find_matches(path) }.uniq.compact
-    run_tests matches
+
+    runners_with_paths = {}
+    paths.each do |path| 
+      find_and_populate_matches(path, runners_with_paths) 
+    end  
+
+    runners_with_paths.each do |runner, paths| 
+      paths.uniq!
+      paths.compact!
+    end
+
+    run_tests runners_with_paths
   end
-  
+
   def examples_matching(name, suffix = "example")
     regex = %r%.*#{name}_#{suffix}\.rb$%
     all_examples.find_all { |ex| ex =~ regex }
   end
 
-  def build_cmd(paths)
-    classes = paths.map { |p| p.gsub(".rb", "") }.join(" ")
-    puts "\nRunning #{paths.join(', ').inspect}" 
-
-    execute = %[-e "%w[#{classes}].each { |f| require f }"]
-# Pickup command from treasure map here, probably
-    cmd = "ruby #{execute}"
+  def build_cmd(runner, paths)
+    puts "\nRunning #{paths.join(', ').inspect} with #{runner}" 
+    cmd = "#{runner} #{paths.join(' ')}"
     say cmd
     cmd
   end
@@ -83,7 +96,7 @@ class Beholder
     read_default_map
     possible_map_locations.each { |path| read_map_at(path) }
   end
-  
+
   def read_map_at(path)
     return unless File.exist?(path)
     say "Found a map at #{path}"
@@ -106,7 +119,7 @@ class Beholder
         puts "   Did you just send me an INT? Ugh.  I'll quit for real if you do it again."
         @sent_an_int = true
         Kernel.sleep 1.5
-        run_tests all_examples
+        run_tests default_runner => all_examples
       end
     end
   end    
@@ -119,12 +132,12 @@ class Beholder
     end
     @watcher.run
   end
-  
+
   def startup_msg
     puts %[Beholder has loaded - CTRL-C once to reset, twice to quit.]
     puts %[Watching the following paths: #{paths_to_watch.join(", ")}]
   end
-  
+
   def read_default_map
     map_for(:default) do |m|
 
@@ -144,20 +157,21 @@ class Beholder
 
     end
   end
-  
+
   def clear_maps
     @treasure_maps = {}
   end
-  
+
+  # TODO: These need to be lambdas to catch newly added files
   def set_all_examples
     if paths_to_watch.include?('examples')
       @all_examples += Dir['examples/**/*_example.rb']
     end
-    
+
     if paths_to_watch.include?('test')
       @all_examples += Dir['test/**/*_test.rb']
     end
-    
+
     if paths_to_watch.include?('spec')
       @all_examples += Dir['spec/**/*_spec.rb']
     end
@@ -167,35 +181,47 @@ class Beholder
     @sent_an_int = false
   end
 
-  def find_matches(path)
+  def find_and_populate_matches(path, runners_with_paths)
     treasure_maps.each do |name, map|
-      map.each do |pattern, blk|
+      map.each do |pattern, options, blk|
+        run_using = options[:command]
         if match = path.match(pattern)
           say "Found the match for #{path} using the #{name} map "
-          return blk.call(match)
+          runners_with_paths[run_using] ||= []
+          runners_with_paths[run_using].concat(blk.call(match))
+          return
         end
       end
     end
 
     puts "Unknown file: #{path}"
-    return []
-  end
-
-  def run_tests(paths)
-    paths.flatten!
-
-    paths.reject! do |path|
-      found_treasure = File.exist?(path)
-      puts "#{path} does not exist." unless found_treasure
-    end
-
-    return if paths.empty?
-    system build_cmd(paths)
-    blink
   end
   
+  def run_tests(runners_with_paths)
+    remove_runners_with_no_valid_files_to_run(runners_with_paths)
+
+    return if runners_with_paths.empty?
+
+    runners_with_paths.each do |runner, paths|
+      system build_cmd(runner, paths)
+    end
+    
+    blink
+  end
+
   private
 
+  def remove_runners_with_no_valid_files_to_run(runners_with_paths)
+    runners_with_paths.each do |runner, paths|
+      paths.reject! do |path|
+        found_treasure = File.exist?(path)
+        puts "#{path} does not exist." unless found_treasure
+      end
+    end
+    
+    runners_with_paths.reject! { |runner, paths| paths.empty? }
+  end
+  
   def say(msg)
     puts msg if verbose
   end

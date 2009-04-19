@@ -36,15 +36,7 @@ describe Beholder do
     it "should identify what was changed" do
       files = ['widgets'] 
       beholder = Beholder.new
-      mock(beholder).find_matches('widgets') { nil }
-      beholder.on_change files
-    end
-    
-    it "should run tests for the file that changed" do
-      files = ['widgets'] 
-      beholder = Beholder.new
-      stub(beholder).find_matches('widgets') { 'widgets_example' }
-      mock(beholder).run_tests(['widgets_example'])
+      mock(beholder).find_and_populate_matches('widgets', {}) { nil }
       beholder.on_change files
     end
     
@@ -61,12 +53,12 @@ describe Beholder do
   describe "build_cmd" do
     it "contructs build cmd for a single file" do
       beholder = Beholder.new
-      beholder.build_cmd(["test/foo_test.rb"]).should == %[ruby -e "%w[test/foo_test].each { |f| require f }"]
+      beholder.build_cmd("ruby", ["test/foo_test.rb"]).should == "ruby test/foo_test.rb"
     end
     
     it "contructs build cmd for a multiple files" do
       beholder = Beholder.new
-      beholder.build_cmd(["test/foo_test.rb", "test/functionals/foo_test.rb"]).should == %[ruby -e "%w[test/foo_test test/functionals/foo_test].each { |f| require f }"]
+      beholder.build_cmd("ruby", ["test/foo_test.rb", "test/functionals/foo_test.rb"]).should == %[ruby test/foo_test.rb test/functionals/foo_test.rb]
     end
     
   end
@@ -129,14 +121,21 @@ describe Beholder do
       beholder = Beholder.new
       blk = lambda { "something" }
       beholder.map_for(:example) { |m| m.add_mapping(%r%example_helper\.rb%, &blk) }
-      beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, blk ]]
+      beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, {:command => "ruby"}, blk ]]
     end
     
     it "aliases prepare_spell_for to add_mapping" do
       beholder = Beholder.new
       blk = lambda { "something" }
       beholder.map_for(:example) { |m| m.prepare_spell_for(%r%example_helper\.rb%, &blk) }
-      beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, blk ]]
+      beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, {:command => "ruby"}, blk ]]
+    end
+    
+    it "adds mapping using default command of ruby" do
+      beholder = Beholder.new
+      blk = lambda { "something" }
+      beholder.map_for(:example) { |m| m.add_mapping(%r%example_helper\.rb%, &blk) }
+      beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, {:command => "ruby"}, blk ]]
     end
   end
   
