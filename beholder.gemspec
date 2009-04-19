@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Chad Humphries, Rob Sanheim"]
-  s.date = %q{2009-04-05}
+  s.date = %q{2009-04-18}
   s.default_executable = %q{beholder}
   s.description = %q{beholder}
   s.email = %q{chad@spicycode.com, rsanheim@gmail.com}
