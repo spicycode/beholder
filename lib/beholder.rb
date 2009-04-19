@@ -37,10 +37,14 @@ class Beholder
   ensure
     @current_map = nil
   end
+  
+  def default_options
+    { :command => "ruby" }
+  end
 
-  def add_mapping(pattern, run_using=nil, &blk)
-    run_using ||= default_runner
-    @current_map << [pattern, run_using, blk]
+  def add_mapping(pattern, options = {}, &blk)
+    options = default_options.merge(options)
+    @current_map << [pattern, options, blk]
   end
 
   def watch(*paths)
@@ -59,10 +63,11 @@ class Beholder
 
   def on_change(paths)
     say "#{paths} changed" unless paths.nil? || paths.empty?
+
     treasure_maps_changed = paths.select { |p| possible_map_locations.include?(p) }
     treasure_maps_changed.each {|map_path| read_map_at(map_path) }
-    # uniqs might be lost now
-    runners_with_paths = { default_runner => [] }
+
+    runners_with_paths = {}
     paths.each do |path| 
       find_and_populate_matches(path, runners_with_paths) 
     end  
@@ -81,16 +86,8 @@ class Beholder
   end
 
   def build_cmd(runner, paths)
-    classes = paths.map { |p| p.gsub(".rb", "") }.join(" ")
     puts "\nRunning #{paths.join(', ').inspect} with #{runner}" 
-
-    # Rob changed it to this for test/unit
-    # execute = %[-e "%w[#{classes}].each { |f| require f }"]
-    # cmd = "#{default_runner} #{execute}"
-
-    # it was 
-    cmd = "#{runner} #{classes}"
-
+    cmd = "#{runner} #{paths.join(' ')}"
     say cmd
     cmd
   end
@@ -186,7 +183,8 @@ class Beholder
 
   def find_and_populate_matches(path, runners_with_paths)
     treasure_maps.each do |name, map|
-      map.each do |pattern, run_using, blk|
+      map.each do |pattern, options, blk|
+        run_using = options[:command]
         if match = path.match(pattern)
           say "Found the match for #{path} using the #{name} map "
           runners_with_paths[run_using] ||= []
@@ -198,27 +196,32 @@ class Beholder
 
     puts "Unknown file: #{path}"
   end
-
+  
   def run_tests(runners_with_paths)
-    runners_with_paths.each do |runner, paths|
-      paths.reject! do |path|
-        found_treasure = File.exist?(path)
-        puts "#{path} does not exist." unless found_treasure
-      end
-    end
-
-    runners_with_paths.reject! { |runner, paths| paths.empty? }
+    remove_runners_with_no_valid_files_to_run(runners_with_paths)
 
     return if runners_with_paths.empty?
 
     runners_with_paths.each do |runner, paths|
       system build_cmd(runner, paths)
     end
+    
     blink
   end
 
   private
 
+  def remove_runners_with_no_valid_files_to_run(runners_with_paths)
+    runners_with_paths.each do |runner, paths|
+      paths.reject! do |path|
+        found_treasure = File.exist?(path)
+        puts "#{path} does not exist." unless found_treasure
+      end
+    end
+    
+    runners_with_paths.reject! { |runner, paths| paths.empty? }
+  end
+  
   def say(msg)
     puts msg if verbose
   end
