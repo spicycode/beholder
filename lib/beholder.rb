@@ -1,5 +1,5 @@
 require 'rubygems'
-gem :fsevents
+gem 'fsevents'
 require 'fsevents'
 
 class Beholder

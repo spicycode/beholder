@@ -4,7 +4,7 @@ $LOAD_PATH.unshift lib_path unless $LOAD_PATH.include?(lib_path)
 require 'beholder'
 require 'rubygems'
 require 'micronaut'
-gem :rr, '>=0.7.0'
+gem 'rr', '>=0.7.0'
 require 'log_buddy'
 LogBuddy.init
 
