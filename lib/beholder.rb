@@ -1,25 +1,66 @@
 require 'rubygems'
-gem 'fsevents'
 require 'fsevents'
 
 class Beholder
+  DEFAULT_RUNNER = 'ruby'
 
-  attr_reader :paths_to_watch, :sent_an_int, :mappings, :working_directory, :verbose
-  attr_reader :watcher, :treasure_maps, :possible_map_locations, :all_examples, :default_runner
+  class << self
+    attr_writer :runner, :test_types, :possible_treasure_map_locations
+    
+    def runner
+      @runner ||= ::Beholder::DEFAULT_RUNNER
+    end
+
+    def possible_treasure_map_locations
+      @possible_treasure_map_locations ||= ["#{Dir.pwd}/.treasure_map.rb", "#{Dir.pwd}/treasure_map.rb", "#{Dir.pwd}/config/treasure_map.rb"]
+    end
+
+    def test_types
+      @test_types ||= %w{spec examples test}
+    end
+
+    def test_extensions
+      @test_extensions ||= %w{spec example test}
+    end
+
+    def test_directories
+      return @test_directories if @test_directories
+      @test_directories = []
+      test_types.each do |test_type|
+        @test_directories << test_type if File.exist?(test_type) 
+      end
+      @test_directories
+    end
+
+    def all_tests
+      lambda { 
+        dirs = []
+        test_directories.each do |dir|
+          test_extensions.each do |test_ext|
+            files = Dir["#{dir}/**/*_#{test_ext}.rb"]
+            # Ignore tarantula tests for now until we add a cleaner way
+            files.reject! { |file| file.include?('tarantula/') }
+            next if files.empty?
+            dirs << files
+          end
+        end
+        dirs.flatten!
+      }.call
+    end
+  end
+
+  attr_reader :paths_to_watch, :sent_an_int, :mappings, :be_verbose
+  attr_reader :watcher, :treasure_maps
 
   def initialize
-    @working_directory = Dir.pwd
-    @paths_to_watch, @all_examples = [], []
+    @paths_to_watch = []
     @mappings, @treasure_maps = {}, {}
     @sent_an_int = false
-    @verbose = ARGV.include?("-v") || ARGV.include?("--verbose")
-    @default_runner = 'ruby'
-    @possible_map_locations = ["#{@working_directory}/.treasure_map.rb", "#{@working_directory}/treasure_map.rb", "#{@working_directory}/config/treasure_map.rb"]
+    @be_verbose = ARGV.include?("-v") || ARGV.include?("--verbose")
   end
 
   def run
     read_all_maps
-    set_all_examples if all_examples.empty?
     prepare    
     start
   end
@@ -39,22 +80,22 @@ class Beholder
   end
   
   def default_options
-    { :command => "ruby" }
+    { :command => ::Beholder.runner }
   end
 
-  def add_mapping(pattern, options = {}, &blk)
+  def prepare_spell_for(pattern, options = {}, &blk)
     options = default_options.merge(options)
     @current_map << [pattern, options, blk]
   end
 
-  def watch(*paths)
+  def keep_a_watchful_eye_for(*paths)
     @paths_to_watch.concat(paths)
     @paths_to_watch.uniq!
     @paths_to_watch.sort!
   end
 
-  alias :keep_a_watchful_eye_for :watch
-  alias :prepare_spell_for :add_mapping
+  alias :watch :keep_a_watchful_eye_for
+  alias :add_mapping :prepare_spell_for
 
   def shutdown
     watcher.shutdown
@@ -64,7 +105,7 @@ class Beholder
   def on_change(paths)
     say "#{paths} changed" unless paths.nil? || paths.empty?
 
-    treasure_maps_changed = paths.select { |p| possible_map_locations.include?(p) }
+    treasure_maps_changed = paths.select { |p| ::Beholder.possible_treasure_map_locations.include?(p) }
     treasure_maps_changed.each {|map_path| read_map_at(map_path) }
 
     runners_with_paths = {}
@@ -80,9 +121,9 @@ class Beholder
     run_tests runners_with_paths
   end
 
-  def examples_matching(name, suffix = "example")
-    regex = %r%.*#{name}_#{suffix}\.rb$%
-    all_examples.find_all { |ex| ex =~ regex }
+  def tests_matching(name)
+    regex = %r%.*#{name}.*\.rb$%
+    ::Beholder.all_tests.find_all { |ex| ex =~ regex }
   end
 
   def build_cmd(runner, paths)
@@ -94,7 +135,7 @@ class Beholder
 
   def read_all_maps
     read_default_map
-    possible_map_locations.each { |path| read_map_at(path) }
+    ::Beholder::possible_treasure_map_locations.each { |path| read_map_at(path) }
   end
 
   def read_map_at(path)
@@ -119,7 +160,7 @@ class Beholder
         puts "   Did you just send me an INT? Ugh.  I'll quit for real if you do it again."
         @sent_an_int = true
         Kernel.sleep 1.5
-        run_tests default_runner => all_examples
+        run_tests ::Beholder.runner => ::Beholder.all_tests
       end
     end
   end    
@@ -139,42 +180,47 @@ class Beholder
   end
 
   def read_default_map
-    map_for(:default) do |m|
-
-      m.watch 'lib', 'examples'
-
-      m.add_mapping %r%examples/(.*)_example\.rb% do |match|
-        ["examples/#{match[1]}_example.rb"]
+    map_for(:and_lo_for_i_am_the_default_treasure_map) do |m|
+      
+      m.watch 'lib', *::Beholder.test_directories
+      
+      m.prepare_spell_for %r%lib/(.*)\.rb% do |match|
+       tests_matching match[1] 
       end
 
-      m.add_mapping %r%examples/example_helper\.rb% do |match|
-        Dir["examples/**/*_example.rb"]
+      m.prepare_spell_for %r%.*#{::Beholder.test_extensions.join('|')}\.rb% do |match|
+       tests_matching match[1] 
       end
 
-      m.add_mapping %r%lib/(.*)\.rb% do |match|
-        examples_matching match[1]
-      end
+      # ::Beholder.test_directories do |test_dir|
+        # puts %r%#{test_dir}(.*)_(#{::Beholder.test_extensions.join('|')})% 
+        # m.prepare_spell_for %r%#{test_dir}(.*)_(#{::Beholder.test_extensions.join('|')})% do |match|
+          # tests = ::Beholder.test_extensions.map do |test_ext|
+            # "#{test_dir}/**/*_#{test_ext}.rb"
+          # end
+          # Dir[*tests]
+        # end
+
+        # ::Beholder.test_extensions.each do |test_ext|
+          # m.prepare_spell_for %r%#{test_dir}/#{test_ext}_helper.rb% do |match|
+            # ::Beholder.all_tests
+          # end
+        # end
+      # end
+
+      # m.prepare_spell_for %r%spec/spec_helper\.rb% do |match|
+        # Dir["spec/**/*_spec.rb"]
+      # end
+
+      # m.prepare_spell_for %r%lib/(.*)\.rb% do |match|
+        # tests_matching match[1]
+      # end
 
     end
   end
 
   def clear_maps
     @treasure_maps = {}
-  end
-
-  # TODO: These need to be lambdas to catch newly added files
-  def set_all_examples
-    if paths_to_watch.include?('examples')
-      @all_examples += Dir['examples/**/*_example.rb']
-    end
-
-    if paths_to_watch.include?('test')
-      @all_examples += Dir['test/**/*_test.rb']
-    end
-
-    if paths_to_watch.include?('spec')
-      @all_examples += Dir['spec/**/*_spec.rb']
-    end
   end
 
   def blink
@@ -185,6 +231,7 @@ class Beholder
     treasure_maps.each do |name, map|
       map.each do |pattern, options, blk|
         run_using = options[:command]
+
         if match = path.match(pattern)
           say "Found the match for #{path} using the #{name} map "
           runners_with_paths[run_using] ||= []
@@ -215,15 +262,15 @@ class Beholder
     runners_with_paths.each do |runner, paths|
       paths.reject! do |path|
         found_treasure = File.exist?(path)
-        puts "#{path} does not exist." unless found_treasure
+        say "#{path} does not exist." unless found_treasure
       end
     end
     
     runners_with_paths.reject! { |runner, paths| paths.empty? }
   end
   
-  def say(msg)
-    puts msg if verbose
+  def say(this_message_please)
+    puts this_message_please if be_verbose
   end
 
 end

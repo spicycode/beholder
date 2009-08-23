@@ -1,44 +1,58 @@
 begin
   require 'jeweler'
-  Jeweler::Tasks.new do |s|
-    s.name = "beholder"
-    s.summary = "An ancient beholder that watches your treasure, and deals with thiefs"
-    s.email = "chad@spicycode.com, rsanheim@gmail.com"
-    s.homepage = "http://github.com/rsanheim/beholder"
-    s.description = "beholder"
-    s.authors = "Chad Humphries, Rob Sanheim"
-    s.has_rdoc = true
-    s.extra_rdoc_files = ["README.textile", "LICENSE", 'TODO']
-    s.add_dependency "fsevents"
-    s.bindir = 'bin'
-    s.default_executable = 'beholder'
-    s.executables = ["beholder"]
-    s.require_path = 'lib'
-    s.files = %w(LICENSE README.textile Rakefile TODO) + Dir.glob("{lib,examples}/**/*")
+  Jeweler::Tasks.new do |gem|
+    gem.name = "beholder"
+    gem.summary = "An ancient beholder that watches your treasure, and deals with thiefs"
+    gem.email = "chad@spicycode.com, rsanheim@gmail.com"
+    gem.homepage = "http://github.com/rsanheim/beholder"
+    gem.description = "beholder"
+    gem.authors = "Chad Humphries, Rob Sanheim"
+    gem.has_rdoc = true
+    gem.extra_rdoc_files = ["README.md", "LICENSE"]
+    gem.bindir = 'bin'
+    gem.default_executable = 'beholder'
+    gem.executables = ["beholder"]
+    gem.require_path = 'lib'
+    gem.files = %w(LICENSE README.md Rakefile) + Dir.glob("{lib,spec}/**/*")
+    gem.add_dependency "fsevents"
+    gem.add_development_dependency "rspec"
+    gem.add_development_dependency "yard"
+    gem.add_development_dependency "rr", ">= 0.7.0"
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"
 end
 
-begin
-  gem "spicycode-micronaut"
-  require 'micronaut/rake_task'
+begin 
+  require 'spec/rake/spectask'
 
-  desc "Run all micronaut examples"
-  Micronaut::RakeTask.new :examples do |t|
-    t.pattern = "examples/**/*_example.rb"
+  Spec::Rake::SpecTask.new(:spec) do |spec|
+    spec.libs << 'lib' << 'spec'
+    spec.spec_files = FileList['spec/**/*_spec.rb']
+    spec.spec_opts = ['-c', '-fn']
   end
 
-  namespace :examples do
-    desc "Run all micronaut examples using rcov"
-    Micronaut::RakeTask.new :coverage do |t|
-      t.pattern = "examples/**/*_example.rb"
-      t.rcov = true
-      t.rcov_opts = "--exclude \"examples/*,gems/*,db/*,/Library/Frameworks/*,/Library/Ruby/*,config/*\" --text-summary  --sort coverage " 
-    end
+  Spec::Rake::SpecTask.new(:rcov) do |spec|
+    spec.libs << 'lib' << 'spec'
+    spec.pattern = 'spec/**/*_spec.rb'
+    spec.rcov = true
+    spec.spec_opts = ['-c', '-fn']
   end
 
-  task :default => 'examples:coverage'
+  task :spec => :check_dependencies
+
+  task :default => :spec
 rescue LoadError
-  puts "Micronaut required to run examples. Install it with: sudo gem install spicycode-micronaut -s http://gems.github.com"
+  task :default do
+    abort "Rspec is not available."
+  end
+end
+
+begin
+  require 'yard'
+  YARD::Rake::YardocTask.new
+rescue LoadError
+  task :yardoc do
+    abort "YARD is not available. In order to run yardoc, you must: sudo gem install yard"
+  end
 end

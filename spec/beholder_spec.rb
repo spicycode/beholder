@@ -138,15 +138,10 @@ describe Beholder do
       beholder = Beholder.new
       blk = lambda { "something" }
       generate_map(beholder, blk)
-      beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, {:command => "ruby"}, blk ]]
+      # This is not ideal
+      # currently returns array, array 
+      beholder.treasure_maps[:example].first.first.should == %r%example_helper\.rb% 
     end
-    
-    # it "aliases prepare_spell_for to add_mapping" do
-      # beholder = Beholder.new
-      # blk = lambda { "something" }
-      # generate_map(beholder, blk)
-      # beholder.treasure_maps[:example].should == [[ %r%example_helper\.rb%, {:command => "ruby"}, blk ]]
-    # end
     
     # it "adds mapping using default command of ruby" do
       # beholder = Beholder.new
