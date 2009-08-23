@@ -192,30 +192,6 @@ class Beholder
        tests_matching match[1] 
       end
 
-      # ::Beholder.test_directories do |test_dir|
-        # puts %r%#{test_dir}(.*)_(#{::Beholder.test_extensions.join('|')})% 
-        # m.prepare_spell_for %r%#{test_dir}(.*)_(#{::Beholder.test_extensions.join('|')})% do |match|
-          # tests = ::Beholder.test_extensions.map do |test_ext|
-            # "#{test_dir}/**/*_#{test_ext}.rb"
-          # end
-          # Dir[*tests]
-        # end
-
-        # ::Beholder.test_extensions.each do |test_ext|
-          # m.prepare_spell_for %r%#{test_dir}/#{test_ext}_helper.rb% do |match|
-            # ::Beholder.all_tests
-          # end
-        # end
-      # end
-
-      # m.prepare_spell_for %r%spec/spec_helper\.rb% do |match|
-        # Dir["spec/**/*_spec.rb"]
-      # end
-
-      # m.prepare_spell_for %r%lib/(.*)\.rb% do |match|
-        # tests_matching match[1]
-      # end
-
     end
   end
 
