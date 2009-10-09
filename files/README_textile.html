@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <title>README.textile</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="../css/reset.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="../css/main.css" type="text/css" media="screen" />
+    <script src="../js/jquery-1.3.2.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../js/jquery-effect.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../js/main.js" type="text/javascript" charset="utf-8"></script>
+</head>
+
+<body>     
+    <div class="banner">
+        <h1>
+            README.textile
+        </h1>
+        <ul class="files">
+            <li>README.textile</li>
+            <li>Last modified: Sun Aug 23 14:42:29 -0400 2009</li>
+        </ul>
+    </div>
+
+    <div id="bodyContent">
+        <div id="content">
+    
+    <div class="description">
+        <p>
+h1. <a href="../classes/Beholder.html">Beholder</a>
+</p>
+<p>
+An ancient beholder that watches your treasure, and deals with thiefs.
+</p>
+<p>
+h2. What does it do?
+</p>
+<p>
+Think autotest, but powered by fseventd.
+</p>
+<p>
+h2. Requirements
+</p>
+<p>
+# OSX 10.5 or higher # RubyCocoa # fsevents gem
+</p>
+<p>
+The default treasure map:
+</p>
+<p>
+map_for(:default_dungeon) do |wizard|
+</p>
+<pre>
+  wizard.keep_a_watchful_eye_for 'app', 'config', 'lib', 'examples'
+
+  wizard.prepare_spell_for /\/app\/(.*)\.rb/ do |spell_component|
+    [&quot;examples/#{spell_component[1]}.rb&quot;]
+  end
+
+  wizard.prepare_spell_for /\/lib\/(.*)\.rb/ do |spell_component|
+    [&quot;examples/lib/#{spell_component[1]}_example.rb&quot;]
+  end
+
+  wizard.prepare_spell_for /\/examples\/(.*)_example\.rb/ do |spell_component|
+    [&quot;examples/#{spell_component[1]}_example.rb&quot;]
+  end
+
+  wizard.prepare_spell_for /\/examples\/example_helper\.rb/ do |spell_component|
+    Dir[&quot;examples/**/*_example.rb&quot;]
+  end
+
+  wizard.prepare_spell_for /\/config/ do
+    Dir[&quot;examples/**/*_example.rb&quot;]
+  end
+</pre>
+<p>
+end
+</p>
+<p>
+In your own treasure map (stored as treasure_map.rb, .treasure_map.rb, or
+config/treasure_map.rb) you could do:
+</p>
+<p>
+map_for(:beholders_lair) do |wizard|
+</p>
+<pre>
+  # Clear all watched paths =&gt; wizard.paths_to_watch.clear
+  # Add these paths to the paths to watch
+  wizard.keep_a_watchful_eye_for 'coverage'
+
+  # Forget all other treasure maps loaded
+  # wizard.clear_maps
+
+  # Add your own rules
+  # wizard.prepare_spell_for /\/foobar/ do
+  #   Dir[&quot;examples/foobar/*_example.rb&quot;]
+  # end
+
+  # You could set the list of all examples to be run after pressing ctrl-c once
+  # it defaults to any files in examples, spec, and test
+  wizard.all_examples = Dir['your/path/**/*_here.rb']
+</pre>
+<p>
+end
+</p>
+<p>
+Treasure maps are automatically reloaded when you change them, so you can
+fire up <a href="../classes/Beholder.html">Beholder</a> and start iterating
+on the config live.
+</p>
+
+    </div>
+    
+
+    
+
+    
+    
+
+    
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</div>
+    </div>
+  </body>
+</html>
