@@ -17,7 +17,6 @@ describe Beholder do
   end
 
   describe "when run is called" do
-    
     it "should create a new beholder" do
       beholder = stub(Beholder.new) { prepare; start }
       mock(Beholder).new { beholder }
@@ -42,26 +41,15 @@ describe Beholder do
       
       Beholder.run
     end
-    
   end
   
   describe "when it notices file(s) changed" do
-    
     it "should identify what was changed" do
       files = ['widgets'] 
       beholder = Beholder.new
-      mock(beholder).find_and_populate_matches('widgets', {}) { nil }
+      mock(beholder).find_and_populate_matches('widgets') { nil }
       beholder.on_change files
     end
-    
-    it "should re-eval the treasure map if the map was modified" do
-      treasure_map = "#{Dir.pwd}/.treasure_map.rb"
-      beholder = Beholder.new
-      stub(File).exist?(treasure_map) { true }
-      mock(beholder).read_map_at(treasure_map)
-      beholder.on_change treasure_map
-    end
-    
   end
   
   describe "build_cmd" do
@@ -74,11 +62,9 @@ describe Beholder do
       beholder = Beholder.new
       beholder.build_cmd("ruby", ["test/foo_test.rb", "test/functionals/foo_test.rb"]).should == %[ruby test/foo_test.rb test/functionals/foo_test.rb]
     end
-    
   end
   
   describe "blink" do
-    
     it "should forget about any interlopers" do
       beholder = Beholder.new
       beholder.instance_variable_set("@sent_an_int", true) # Not so hot, but I'm tired
@@ -87,11 +73,9 @@ describe Beholder do
       beholder.__send__ :blink
       beholder.sent_an_int.should be_false
     end
-    
   end
   
   describe "when shutting down" do
-    
     it "should stop watching for changes"  do
       beholder = Beholder.new
       stub(beholder).exit
@@ -105,11 +89,9 @@ describe Beholder do
       mock(beholder).exit
       beholder.shutdown
     end
-    
   end
   
   describe "watch" do
-    
     it "adds paths to watch" do
       beholder = Beholder.new
       beholder.watch "bar", "foo"
@@ -141,6 +123,7 @@ describe Beholder do
       # This is not ideal
       # currently returns array, array 
       beholder.treasure_maps[:example].first.first.should == %r%example_helper\.rb% 
+      1.should == 3
     end
     
     # it "adds mapping using default command of ruby" do
@@ -152,7 +135,6 @@ describe Beholder do
   end
   
   describe "tests_matching" do
-
     it "finds a fuzzy match from all tests" do
       beholder = Beholder.new
       stub(Beholder).all_tests { ["spec/unit/bar_example.rb", "src/foo_system_example.rb", "spec/some/deeper/dir/foo_example.rb"] }
@@ -161,7 +143,6 @@ describe Beholder do
   end
   
   describe "read_map_at" do
-    
     it "rescues exceptions from instance_eval'ing the map, and carries on" do
       beholder = Beholder.new
       stub(File).exist? { true }
@@ -169,11 +150,9 @@ describe Beholder do
       stub(beholder).puts
       lambda { beholder.read_map_at("my_map.rb") }.should_not raise_error
     end
-    
   end
   
   describe "say" do
-    
     it "puts to stdout if verbose is true" do
       begin 
         ARGV.push("-v")

@@ -5,10 +5,15 @@ class Beholder
   DEFAULT_RUNNER = 'ruby'
 
   class << self
-    attr_writer :runner, :test_types, :possible_treasure_map_locations
-    
+    attr_writer :test_types, :possible_treasure_map_locations
+    attr_accessor :on_success, :on_failure 
+
     def runner
       @runner ||= ::Beholder::DEFAULT_RUNNER
+    end
+
+    def runner=(new_runner)
+      @runner = new_runner
     end
 
     def possible_treasure_map_locations
@@ -79,12 +84,7 @@ class Beholder
     @current_map = nil
   end
   
-  def default_options
-    { :command => ::Beholder.runner }
-  end
-
   def prepare_spell_for(pattern, options = {}, &blk)
-    options = default_options.merge(options)
     @current_map << [pattern, options, blk]
   end
 
@@ -105,18 +105,20 @@ class Beholder
   def on_change(paths)
     say "#{paths} changed" unless paths.nil? || paths.empty?
 
-    treasure_maps_changed = paths.select { |p| ::Beholder.possible_treasure_map_locations.include?(p) }
-    treasure_maps_changed.each {|map_path| read_map_at(map_path) }
-
+    paths.reject! { |path| ::Beholder.possible_treasure_map_locations.include?(path) }
     runners_with_paths = {}
-    paths.each do |path| 
-      find_and_populate_matches(path, runners_with_paths) 
-    end  
 
-    runners_with_paths.each do |runner, paths| 
-      paths.uniq!
-      paths.compact!
-    end
+    paths.each do |path| 
+      runner, tests = *find_and_populate_matches(path)
+      next if tests.nil? || tests.empty?
+
+      tests.uniq!
+      tests.compact!
+
+      if tests.any?
+        runners_with_paths[runner] = tests
+      end
+    end  
 
     run_tests runners_with_paths
   end
@@ -160,7 +162,7 @@ class Beholder
         puts "   Did you just send me an INT? Ugh.  I'll quit for real if you do it again."
         @sent_an_int = true
         Kernel.sleep 1.5
-        run_tests ::Beholder.runner => ::Beholder.all_tests
+        run_tests nil => ::Beholder.all_tests
       end
     end
   end    
@@ -203,16 +205,12 @@ class Beholder
     @sent_an_int = false
   end
 
-  def find_and_populate_matches(path, runners_with_paths)
+  def find_and_populate_matches(path)
     treasure_maps.each do |name, map|
       map.each do |pattern, options, blk|
-        run_using = options[:command]
-
         if match = path.match(pattern)
           say "Found the match for #{path} using the #{name} map "
-          runners_with_paths[run_using] ||= []
-          runners_with_paths[run_using].concat(blk.call(match))
-          return
+          return [options[:command], blk.call(match)]
         end
       end
     end
@@ -226,7 +224,14 @@ class Beholder
     return if runners_with_paths.empty?
 
     runners_with_paths.each do |runner, paths|
-      system build_cmd(runner, paths)
+      runner ||= ::Beholder.runner
+      result = %x{#{build_cmd(runner, paths)}}
+      puts result
+      if $?.exitstatus.zero?
+        ::Beholder.on_success && ::Beholder.on_success.call(result) 
+      else
+        ::Beholder.on_failure && ::Beholder.on_failure.call(result) 
+      end
     end
     
     blink
@@ -235,6 +240,9 @@ class Beholder
   private
 
   def remove_runners_with_no_valid_files_to_run(runners_with_paths)
+    return [] if runners_with_paths.nil?
+    require 'pp'
+    pp runners_with_paths
     runners_with_paths.each do |runner, paths|
       paths.reject! do |path|
         found_treasure = File.exist?(path)
