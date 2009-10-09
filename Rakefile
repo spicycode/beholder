@@ -14,13 +14,13 @@ begin
     gem.executables = ["beholder"]
     gem.require_path = 'lib'
     gem.files = %w(LICENSE README.md Rakefile) + Dir.glob("{lib,spec}/**/*")
-    gem.add_dependency "fsevents"
-    gem.add_development_dependency "rspec"
-    gem.add_development_dependency "yard"
+    gem.add_dependency "fsevents", ">= 0.1.1"
+    gem.add_development_dependency "rspec", ">= 1.2.9"
     gem.add_development_dependency "rr", ">= 0.7.0"
   end
+  Jeweler::GemcutterTasks.new
 rescue LoadError
-  puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"
+  puts "Jeweler not available. Install it with: gem install jeweler"
 end
 
 begin 
@@ -39,9 +39,7 @@ begin
     spec.spec_opts = ['-c', '-fn']
   end
 
-  task :spec => :check_dependencies
-
-  task :default => :spec
+  task :default => [:check_dependencies, :spec]
 rescue LoadError
   task :default do
     abort "Rspec is not available."
@@ -49,10 +47,19 @@ rescue LoadError
 end
 
 begin
-  require 'yard'
-  YARD::Rake::YardocTask.new
-rescue LoadError
-  task :yardoc do
-    abort "YARD is not available. In order to run yardoc, you must: sudo gem install yard"
-  end
+  %w{sdoc sdoc-helpers rdiscount}.each { |name| gem name }
+  require 'sdoc_helpers'
+rescue LoadError => ex
+  puts "sdoc support not enabled:"
+  puts ex.inspect
 end
+
+require 'rake/rdoctask'
+Rake::RDocTask.new do |rdoc|
+  version = File.exist?('VERSION') ? File.read('VERSION') : ''
+  rdoc.rdoc_dir = 'rdoc'
+  rdoc.title = "beholder #{version}"
+  rdoc.rdoc_files.include('README*')
+  rdoc.rdoc_files.include('lib/**/*.rb')
+end
+
