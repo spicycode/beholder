@@ -1,86 +1,79 @@
 require 'rubygems'
-gem :fsevents
 require 'fsevents'
 
-class Proc
-  alias :cast! :call
-end
-
 class Beholder
+  DEFAULT_RUNNER = 'ruby'
 
-  attr_reader :paths_to_watch, :sent_an_int, :mappings, :working_directory, :be_verbose
-  attr_reader :the_eye, :treasure_maps, :possible_map_locations, :all_examples
-  
+  class << self
+    attr_writer :test_types, :possible_treasure_map_locations
+    attr_accessor :on_success, :on_failure 
+
+    def runner
+      @runner ||= ::Beholder::DEFAULT_RUNNER
+    end
+
+    def runner=(new_runner)
+      @runner = new_runner
+    end
+
+    def possible_treasure_map_locations
+      @possible_treasure_map_locations ||= ["#{Dir.pwd}/.treasure_map.rb", "#{Dir.pwd}/treasure_map.rb", "#{Dir.pwd}/config/treasure_map.rb"]
+    end
+
+    def test_types
+      @test_types ||= %w{spec examples test}
+    end
+
+    def test_extensions
+      @test_extensions ||= %w{spec example test}
+    end
+
+    def test_directories
+      return @test_directories if @test_directories
+      @test_directories = []
+      test_types.each do |test_type|
+        @test_directories << test_type if File.exist?(test_type) 
+      end
+      @test_directories
+    end
+
+    def all_tests
+      lambda { 
+        dirs = []
+        test_directories.each do |dir|
+          test_extensions.each do |test_ext|
+            files = Dir["#{dir}/**/*_#{test_ext}.rb"]
+            # Ignore tarantula tests for now until we add a cleaner way
+            files.reject! { |file| file.include?('tarantula/') }
+            next if files.empty?
+            dirs << files
+          end
+        end
+        dirs.flatten!
+      }.call
+    end
+  end
+
+  attr_reader :paths_to_watch, :sent_an_int, :mappings, :be_verbose
+  attr_reader :watcher, :treasure_maps
+
   def initialize
-    @paths_to_watch, @all_examples = [], []
+    @paths_to_watch = []
     @mappings, @treasure_maps = {}, {}
     @sent_an_int = false
-    @working_directory = Dir.pwd
     @be_verbose = ARGV.include?("-v") || ARGV.include?("--verbose")
-    @possible_map_locations = ["#{@working_directory}/.treasure_map.rb", "#{@working_directory}/treasure_map.rb", "#{@working_directory}/config/treasure_map.rb"]
   end
 
-  def self.cast_thy_gaze
+  def run
+    read_all_maps
+    prepare    
+    start
+  end
+
+  def self.run
     beholder = new
-    beholder.read_all_maps
-    beholder.set_all_examples if beholder.all_examples.empty?
-    beholder.prepare_for_interlopers    
-    beholder.open_your_eye
-  end
-
-  def read_all_maps
-    read_default_map
-
-    possible_map_locations.each do |map_location|
-      if File.exist?(map_location)
-        say "Found a treasure map at #{map_location}"
-        instance_eval(File.readlines(map_location).join("\n"))
-        return
-      end
-    end
-  end
-
-  def prepare_for_interlopers
-    trap 'INT' do
-      if @sent_an_int then      
-        puts "   A second INT?  Ok, I get the message.  Shutting down now."
-        close_your_eye
-      else
-        puts "   Did you just send me an INT? Ugh.  I'll quit for real if you do it again."
-        @sent_an_int = true
-        Kernel.sleep 1.5
-        reclaim_stolen_treasure_at all_examples
-      end
-    end
-  end    
-
-  def open_your_eye
-    say("Watching the following locations:\n  #{paths_to_watch.join(", ")}")
-    @the_eye = FSEvents::Stream.watch(paths_to_watch) do |treasure_chest|
-      notice_thief_taking(treasure_chest.modified_files)
-      puts "\n\nWaiting to hear from the disk since #{Time.now}"
-    end
-    @the_eye.run
-  end    
-  
-  def read_default_map
-    map_for(:default_dungeon) do |wizard|
-
-      wizard.keep_a_watchful_eye_for 'lib', 'examples'
-
-      wizard.prepare_spell_for %r%examples/(.*)_example\.rb% do |spell_component|
-        ["examples/#{spell_component[1]}_example.rb"]
-      end
-
-      wizard.prepare_spell_for %r%examples/example_helper\.rb% do |spell_component|
-        Dir["examples/**/*_example.rb"]
-      end
-
-      wizard.prepare_spell_for %r%lib/(.*)\.rb% do |spell_component|
-        ["examples/lib/#{spell_component[1]}_example.rb"]
-      end
-
-    end
+    beholder.run
+    self
   end
 
   def map_for(map_name)
@@ -90,79 +83,176 @@ class Beholder
   ensure
     @current_map = nil
   end
-
-  def prepare_spell_for(arcane_enemy, &spell)
-    @current_map << [arcane_enemy, spell]
-  end
-  alias :add_mapping :prepare_spell_for
-
-  def cast_feeble_mind
-    @treasure_maps = {}
-  end
   
-  def set_all_examples
-    if paths_to_watch.include?('examples')
-      @all_examples += Dir['examples/**/*_example.rb']
-    end
-    
-    if paths_to_watch.include?('test')
-      @all_examples += Dir['test/**/*_test.rb']
-    end
-    
-    if paths_to_watch.include?('spec')
-      @all_examples += Dir['spec/**/*_spec.rb']
-    end
+  def prepare_spell_for(pattern, options = {}, &blk)
+    @current_map << [pattern, options, blk]
   end
 
   def keep_a_watchful_eye_for(*paths)
     @paths_to_watch.concat(paths)
+    @paths_to_watch.uniq!
+    @paths_to_watch.sort!
+  end
+
+  alias :watch :keep_a_watchful_eye_for
+  alias :add_mapping :prepare_spell_for
+
+  def shutdown
+    watcher.shutdown
+    exit
+  end
+
+  def on_change(paths)
+    say "#{paths} changed" unless paths.nil? || paths.empty?
+
+    paths.reject! { |path| ::Beholder.possible_treasure_map_locations.include?(path) }
+    runners_with_paths = {}
+
+    paths.each do |path| 
+      runner, tests = *find_and_populate_matches(path)
+      next if tests.nil? || tests.empty?
+
+      tests.uniq!
+      tests.compact!
+
+      if tests.any?
+        runners_with_paths[runner] = tests
+      end
+    end  
+
+    run_tests runners_with_paths
+  end
+
+  def tests_matching(name)
+    regex = %r%.*#{name}.*\.rb$%
+    ::Beholder.all_tests.find_all { |ex| ex =~ regex }
+  end
+
+  def build_cmd(runner, paths)
+    puts "\nRunning #{paths.join(', ').inspect} with #{runner}" 
+    cmd = "#{runner} #{paths.join(' ')}"
+    say cmd
+    cmd
+  end
+
+  def read_all_maps
+    read_default_map
+    ::Beholder::possible_treasure_map_locations.each { |path| read_map_at(path) }
+  end
+
+  def read_map_at(path)
+    return unless File.exist?(path)
+    say "Found a map at #{path}"
+    begin
+      instance_eval(File.readlines(path).join("\n"))
+    rescue Object => e
+      puts "Exception caught trying to load map at #{path}"
+      puts e
+    end
+  end
+
+  protected
+
+  def prepare
+    trap 'INT' do
+      if @sent_an_int then      
+        puts "   A second INT?  Ok, I get the message.  Shutting down now."
+        shutdown
+      else
+        puts "   Did you just send me an INT? Ugh.  I'll quit for real if you do it again."
+        @sent_an_int = true
+        Kernel.sleep 1.5
+        run_tests nil => ::Beholder.all_tests
+      end
+    end
+  end    
+
+  def start
+    startup_msg
+    @watcher = FSEvents::Stream.watch(paths_to_watch) do |event|
+      on_change(event.modified_files)
+      puts "\n\nWaiting for changes since #{Time.now}"
+    end
+    @watcher.run
+  end
+
+  def startup_msg
+    puts %[Beholder has loaded - CTRL-C once to reset, twice to quit.]
+    puts %[Watching the following paths: #{paths_to_watch.join(", ")}]
+  end
+
+  def read_default_map
+    map_for(:and_lo_for_i_am_the_default_treasure_map) do |m|
+      
+      m.watch 'lib', *::Beholder.test_directories
+      
+      m.prepare_spell_for %r%lib/(.*)\.rb% do |match|
+       tests_matching match[1] 
+      end
+
+      m.prepare_spell_for %r%.*#{::Beholder.test_extensions.join('|')}\.rb% do |match|
+       tests_matching match[1] 
+      end
+
+    end
+  end
+
+  def clear_maps
+    @treasure_maps = {}
   end
 
   def blink
     @sent_an_int = false
   end
 
-  def close_your_eye
-    the_eye.shutdown
-    exit
-  end
-
-  def identify_stolen_treasure(treasure)
-    treasure_maps.each do |name, treasure_locations|
-      treasure_locations.each do |stolen_by_enemy, spell| 
-        if spell_components = treasure.match(stolen_by_enemy)
-          say "Found the stolen treasure using the #{name} map "
-          return spell.cast!(spell_components)
+  def find_and_populate_matches(path)
+    treasure_maps.each do |name, map|
+      map.each do |pattern, options, blk|
+        if match = path.match(pattern)
+          say "Found the match for #{path} using the #{name} map "
+          return [options[:command], blk.call(match)]
         end
       end
     end
 
-    puts "Unknown file: #{treasure}"
-    return []
+    puts "Unknown file: #{path}"
   end
+  
+  def run_tests(runners_with_paths)
+    remove_runners_with_no_valid_files_to_run(runners_with_paths)
 
-  def reclaim_stolen_treasure_at(coordinates)
-    coordinates.flatten!
+    return if runners_with_paths.empty?
 
-    coordinates.reject! do |coordinate|
-      found_treasure = File.exist?(coordinate)
-      puts "#{coordinate} does not exist." unless found_treasure
+    runners_with_paths.each do |runner, paths|
+      runner ||= ::Beholder.runner
+      result = %x{#{build_cmd(runner, paths)}}
+      puts result
+      if $?.exitstatus.zero?
+        ::Beholder.on_success && ::Beholder.on_success.call(result) 
+      else
+        ::Beholder.on_failure && ::Beholder.on_failure.call(result) 
+      end
     end
-
-    return if coordinates.empty?
-
-    puts "\nRunning #{coordinates.join(', ').inspect}" 
-    system "ruby #{coordinates.join(' ')}"
+    
     blink
   end
 
-  def notice_thief_taking(treasure)
-    say "#{treasure} changed" unless treasure.empty?
-    coordinates = treasure.map { |t| identify_stolen_treasure(t) }.uniq.compact
-    reclaim_stolen_treasure_at coordinates
-  end
-
   private
+
+  def remove_runners_with_no_valid_files_to_run(runners_with_paths)
+    return [] if runners_with_paths.nil?
+    require 'pp'
+    pp runners_with_paths
+    runners_with_paths.each do |runner, paths|
+      paths.reject! do |path|
+        found_treasure = File.exist?(path)
+        say "#{path} does not exist." unless found_treasure
+      end
+    end
+    
+    runners_with_paths.reject! { |runner, paths| paths.empty? }
+  end
+  
   def say(this_message_please)
     puts this_message_please if be_verbose
   end

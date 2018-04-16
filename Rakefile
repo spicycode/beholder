@@ -1,66 +1,65 @@
-require 'rubygems'
-require 'rake/gempackagetask'
-require 'rubygems/specification'
-require 'date'
-require 'micronaut/rake_task'
-
-GEM = "beholder"
-GEM_VERSION = "0.5.4"
-AUTHOR = "Chad Humphries"
-EMAIL = "chad@spicycode.com"
-HOMEPAGE = "http://github.com/spicycode/beholder"
-SUMMARY = "An ancient beholder that watches your treasure, and deals with thiefs"
-
-spec = Gem::Specification.new do |s|
-  s.name = GEM
-  s.version = GEM_VERSION
-  s.platform = Gem::Platform::RUBY
-  s.has_rdoc = true
-  s.extra_rdoc_files = ["README.textile", "LICENSE", 'TODO']
-  s.summary = SUMMARY
-  s.description = s.summary
-  s.author = AUTHOR
-  s.email = EMAIL
-  s.homepage = HOMEPAGE
-  s.add_dependency "fsevents"
-  s.bindir = 'bin'
-  s.default_executable = 'beholder'
-  s.executables = ["beholder"]
-  s.require_path = 'lib'
-  s.autorequire = GEM
-  s.files = %w(LICENSE README.textile Rakefile TODO) + Dir.glob("{lib,examples}/**/*")
+begin
+  require 'jeweler'
+  Jeweler::Tasks.new do |gem|
+    gem.name = "beholder"
+    gem.summary = "An ancient beholder that watches your treasure, and deals with thiefs"
+    gem.email = "chad@spicycode.com, rsanheim@gmail.com"
+    gem.homepage = "http://github.com/rsanheim/beholder"
+    gem.description = "beholder"
+    gem.authors = "Chad Humphries, Rob Sanheim"
+    gem.has_rdoc = true
+    gem.extra_rdoc_files = ["README.md", "LICENSE"]
+    gem.bindir = 'bin'
+    gem.default_executable = 'beholder'
+    gem.executables = ["beholder"]
+    gem.require_path = 'lib'
+    gem.files = %w(LICENSE README.md Rakefile) + Dir.glob("{lib,spec}/**/*")
+    gem.add_dependency "fsevents", ">= 0.1.1"
+    gem.add_development_dependency "rspec", ">= 1.2.9"
+    gem.add_development_dependency "rr", ">= 0.7.0"
+  end
+  Jeweler::GemcutterTasks.new
+rescue LoadError
+  puts "Jeweler not available. Install it with: gem install jeweler"
 end
 
-Rake::GemPackageTask.new(spec) do |pkg|
-  pkg.gem_spec = spec
-end
+begin 
+  require 'spec/rake/spectask'
 
-desc "install the gem locally"
-task :install => [:package] do
-  sh %{sudo gem install pkg/#{GEM}-#{GEM_VERSION}}
-end
+  Spec::Rake::SpecTask.new(:spec) do |spec|
+    spec.libs << 'lib' << 'spec'
+    spec.spec_files = FileList['spec/**/*_spec.rb']
+    spec.spec_opts = ['-c', '-fn']
+  end
 
-desc "create a gemspec file"
-task :make_gemspec do
-  File.open("#{GEM}.gemspec", "w") do |file|
-    file.puts spec.to_ruby
+  Spec::Rake::SpecTask.new(:rcov) do |spec|
+    spec.libs << 'lib' << 'spec'
+    spec.pattern = 'spec/**/*_spec.rb'
+    spec.rcov = true
+    spec.spec_opts = ['-c', '-fn']
+  end
+
+  task :default => [:check_dependencies, :spec]
+rescue LoadError
+  task :default do
+    abort "Rspec is not available."
   end
 end
 
-desc "Run all micronaut examples"
-Micronaut::RakeTask.new :examples do |t|
-  t.pattern = "examples/**/*_example.rb"
+begin
+  %w{sdoc sdoc-helpers rdiscount}.each { |name| gem name }
+  require 'sdoc_helpers'
+rescue LoadError => ex
+  puts "sdoc support not enabled:"
+  puts ex.inspect
 end
 
-namespace :examples do
-  
-  desc "Run all micronaut examples using rcov"
-  Micronaut::RakeTask.new :coverage do |t|
-    t.pattern = "examples/**/*_example.rb"
-    t.rcov = true
-    t.rcov_opts = "--exclude \"examples/*,gems/*,db/*,/Library/Frameworks/*,/Library/Ruby/*,config/*\" --text-summary  --sort coverage --no-validator-links" 
-  end
-
+require 'rake/rdoctask'
+Rake::RDocTask.new do |rdoc|
+  version = File.exist?('VERSION') ? File.read('VERSION') : ''
+  rdoc.rdoc_dir = 'rdoc'
+  rdoc.title = "beholder #{version}"
+  rdoc.rdoc_files.include('README*')
+  rdoc.rdoc_files.include('lib/**/*.rb')
 end
 
-task :default => 'examples:coverage'
